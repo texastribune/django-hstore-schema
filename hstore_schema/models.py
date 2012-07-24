@@ -15,9 +15,6 @@ class Data(models.Model):
     data = hstore.DictionaryField()
     primary = models.BooleanField(default=True)
 
-    class Meta:
-        unique_together = ('key', 'source', 'version', 'primary')
-
 
 class MetaData(models.Model):
     """
