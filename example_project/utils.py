@@ -9,7 +9,7 @@ def import_pfai_file(path):
     filename = os.path.basename(path)
     basename, ext = os.path.splitext(filename)
     version = basename.split('_')[-1]  # Year
-    version_data = dict(source='PFAI', version=version)
+    version_data = dict(source='RAW_PFAI', version=version)
 
     Data.objects.filter(**version_data).delete()
     with codecs.open(path, encoding='iso-8859-1') as f:
