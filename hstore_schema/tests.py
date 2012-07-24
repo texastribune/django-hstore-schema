@@ -9,3 +9,4 @@ class TestModels(TestCase):
         self.assertEqual(data.source, '')
         self.assertEqual(data.version, '')
         self.assertEqual(data.data, {})
+        self.assertEqual(data.primary, True)

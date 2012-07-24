@@ -13,7 +13,7 @@ class Data(models.Model):
     source = models.TextField()
     version = models.TextField()
     data = hstore.DictionaryField()
-    primary = models.BooleanField()
+    primary = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ('key', 'source', 'version', 'primary')
