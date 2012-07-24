@@ -1,6 +1,6 @@
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': 'django_hstore.postgresql_psycopg2',
         'NAME': 'tribdata',
         'USER': 'tribdata',
         'PASSWORD': 'trib101',
