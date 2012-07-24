@@ -39,3 +39,12 @@ class Mapping(models.Model):
     mapped_source = models.TextField()
     mapped_version = models.TextField()
     mapped_field = models.TextField()
+
+
+class Field(models.Model):
+    source = models.TextField(primary_key=True)
+    version = models.TextField()
+    field = models.TextField()
+
+    class Meta:
+        managed = False
