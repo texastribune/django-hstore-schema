@@ -5,8 +5,10 @@ DROP VIEW IF EXISTS hstore_schema_field;
 
 
 CREATE VIEW hstore_schema_field AS
-SELECT DISTINCT SOURCE, VERSION, skeys(DATA) AS field
-FROM hstore_schema_data;
+SELECT row_number() OVER (ORDER BY source, field) AS id, * FROM (
+	SELECT DISTINCT source, version, skeys(DATA) AS field
+	FROM hstore_schema_data
+) AS f;
 
 
 CREATE VIEW hstore_schema_fieldsample AS

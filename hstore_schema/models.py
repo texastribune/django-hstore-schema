@@ -42,7 +42,7 @@ class Mapping(models.Model):
 
 
 class Field(models.Model):
-    source = models.TextField(primary_key=True)
+    source = models.TextField()
     version = models.TextField()
     field = models.TextField()
 
