@@ -6,8 +6,9 @@ DROP VIEW IF EXISTS hstore_schema_field;
 
 CREATE VIEW hstore_schema_field AS
 SELECT row_number() OVER (ORDER BY source_id, field) AS id, * FROM (
-	SELECT DISTINCT source_id, version, skeys(DATA) AS field
-	FROM hstore_schema_data
+	SELECT source_id, version, field
+	FROM (SELECT source_id, version, skeys(DATA) AS field FROM hstore_schema_data) AS f_inner
+	GROUP BY source_id, version, field
 ) AS f;
 
 
