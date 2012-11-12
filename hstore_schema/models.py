@@ -85,6 +85,8 @@ class Record(models.Model):
 
     key = models.SlugField(max_length=255, blank=True, null=True)
     data = hstore.DictionaryField()
+
+    label = models.CharField(max_length=255, blank=True, null=True)
     order = models.IntegerField()
 
 
