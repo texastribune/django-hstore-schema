@@ -14,25 +14,17 @@ class Bucket(models.Model):
     slug = models.SlugField(unique=True)
 
 
-class Keymap(models.Model):
+class Namespace(models.Model):
     """
-    Maps a raw value to a key for a given namespace and keyspace.
-
-    `namespace`: represents an entity type, like 'campus' or 'district'
-    `keyspace`: determines the raw key source (i.e. `FIPS` or `CDC`)
-    `raw`: the literal key value from the raw data
-    `key`: the final mapped value used to key records and data
+    Represents a type of entity like 'campus' or 'district'.
     """
-    bucket = models.ForeignKey(Bucket, related_name='keymaps')
+    bucket = models.ForeignKey(bucket, related_name='namespaces')
 
-    namespace = models.SlugField()
-    keyspace = models.SlugField()
-
-    raw = models.CharField(max_length=255)
-    key = models.SlugField(max_length=255)
+    name = models.CharField(max_length=255)
+    slug = models.SlugField()
 
     class Meta:
-        unique_together = ('bucket', 'namespace', 'keyspace', 'raw', 'key')
+        unique_together = ('bucket', 'slug')
 
 
 class Source(models.Model):
@@ -103,7 +95,7 @@ class Field(models.Model):
     `name`: the display name for the field
     `label`: the field used to label the data in a resulting Schema
     """
-    dataset = models.ForeignKey(Dataset, null=True, related_name='fields')
+    namespace = models.ForeignKey(Namespace, related_name='fields')
 
     raw_name = models.CharField(max_length=255)
     display_name = models.CharField(max_length=255, blank=True, null=True)
