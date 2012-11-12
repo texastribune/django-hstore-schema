@@ -18,7 +18,7 @@ class Namespace(models.Model):
     """
     Represents a type of entity like 'campus' or 'district'.
     """
-    bucket = models.ForeignKey(bucket, related_name='namespaces')
+    bucket = models.ForeignKey(Bucket, related_name='namespaces')
 
     name = models.CharField(max_length=255)
     slug = models.SlugField()
@@ -31,8 +31,6 @@ class Source(models.Model):
     """
     A named source of data with some simple metadata.
     """
-    bucket = models.ForeignKey(Bucket, related_name='sources')
-
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255)
@@ -64,6 +62,8 @@ class Dataset(models.Model):
     """
     A named set of data that is sourced from raw files.
     """
+    bucket = models.ForeignKey(Bucket, related_name='datasets')
+
     source = models.ForeignKey(Source, related_name='datasets')
     revision = models.ForeignKey(Revision, related_name='datasets')
     version = models.CharField(max_length=255)
