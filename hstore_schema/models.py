@@ -5,6 +5,7 @@ from django_hstore import hstore
 import jsonfield
 
 
+
 class Bucket(models.Model):
     """
     A namespace for data uniquely identified by its `slug`.
@@ -56,15 +57,22 @@ class Revision(models.Model):
         return UUID(self.digest).time
 
 
+class RevisionManager(models.Manager):
+    def current(self):
+        return self.get_query_set().filter(revision__next__isnull=True)
+
+
 class Dataset(models.Model):
     """
     A named set of data that is sourced from raw files.
     """
     bucket = models.ForeignKey(Bucket, related_name='datasets')
 
-    source = models.ForeignKey(Source, related_name='datasets')
+    revisions = RevisionManager()
     revision = models.ForeignKey(Revision, related_name='datasets')
     version = models.CharField(max_length=255)
+
+    source = models.ForeignKey(Source, related_name='datasets')
 
     name = models.CharField(max_length=255)
     slug = models.CharField(max_length=255, unique=True)
@@ -108,6 +116,7 @@ class Data(models.Model):
     """
     Stores a typed field/value pair for a given key within a namespace.
     """
+    revisions = RevisionManager()
     revision = models.ForeignKey(Revision, related_name='dataset')
     version = models.CharField(max_length=255)
 
@@ -134,6 +143,7 @@ class Transformation(models.Model):
     `source_field`: the direct source of the target primary Data
     `code`: the code used to tranform Records into secondary Data
     """
+    revisions = RevisionManager()
     revision = models.ForeignKey(Revision)
 
     data = models.OneToOneField(Data, related_name='transformation')
