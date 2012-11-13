@@ -1,4 +1,4 @@
-from uuid import UUID
+import uuid
 
 from django.db import models
 from django_hstore import hstore
@@ -52,9 +52,15 @@ class Revision(models.Model):
     digest = models.CharField(max_length=32)
     next = models.OneToOneField('self', null=True, related_name='previous')
 
+    def save(self, *args, **kwargs):
+        if not self.digest:
+            self.digest = uuid.uuid4()
+
+        super(Revision, self).save(*args, **kwargs)
+
     @property
     def time(self):
-        return UUID(self.digest).time
+        return uuid.UUID(self.digest).time
 
 
 class RevisionManager(models.Manager):
