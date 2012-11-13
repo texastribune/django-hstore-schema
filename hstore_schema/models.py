@@ -48,8 +48,6 @@ class Revision(models.Model):
     `digest` is a UUID4 that is shared between all revisions that are
     run as part of the same process.
     """
-    bucket = models.ForeignKey(Bucket, related_name='revisions')
-
     digest = models.CharField(max_length=32)
     next = models.OneToOneField('self', null=True, related_name='previous')
 
