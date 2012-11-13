@@ -70,6 +70,9 @@ class Dataset(models.Model):
     slug = models.CharField(max_length=255, unique=True)
     raw = models.FileField(upload_to='datasets', blank=True, null=True)
 
+    class Meta:
+        unique_together = ('bucket', 'slug', 'revision')
+
 
 class Record(models.Model):
     """
