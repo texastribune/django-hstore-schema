@@ -50,7 +50,7 @@ class Revision(models.Model):
     run as part of the same process.
     """
     digest = models.CharField(max_length=32)
-    next = models.OneToOneField('self', null=True, related_name='previous')
+    previous = models.OneToOneField('self', null=True, related_name='next')
 
     def save(self, *args, **kwargs):
         if not self.digest:
