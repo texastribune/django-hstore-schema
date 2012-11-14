@@ -5,7 +5,6 @@ from django_hstore import hstore
 import jsonfield
 
 
-
 class Bucket(models.Model):
     """
     A namespace for data uniquely identified by its `slug`.
@@ -54,7 +53,7 @@ class Revision(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.digest:
-            self.digest = uuid.uuid4()
+            self.digest = uuid.uuid4().hex
 
         super(Revision, self).save(*args, **kwargs)
 
