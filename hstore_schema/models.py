@@ -66,6 +66,22 @@ class RevisionManager(models.Manager):
     def current(self):
         return self.get_query_set().filter(revision__next__isnull=True)
 
+    def create_or_revise(self, **kwargs):
+        """
+        Works like `get_or_create` but always creates a new revision.
+        """
+        defaults = kwargs.pop('defaults', None)
+
+        try:
+            old = self.current().select_related('revision').get(**kwargs)
+            revision = Revision.objects.create(previous=old.revision)
+        except self.model.DoesNotExist:
+            revision = Revision.objects.create()
+
+        if defaults:
+            kwargs.update(**defaults)
+        return self.create(revision=revision, **kwargs)
+
 
 class Dataset(models.Model):
     """

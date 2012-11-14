@@ -32,3 +32,16 @@ class TestModels(TestCase):
         self.assertEqual(Dataset.objects.count(), 2)
         self.assertEqual(Dataset.revisions.current().count(), 1)
         self.assertEqual(Dataset.revisions.current().all()[0], new_dataset)
+
+    def test_create_or_revise(self):
+        self.assertEqual(Revision.objects.count(), 0)
+        old_dataset = Dataset.revisions.create_or_revise(
+            bucket=self.bucket, source=self.source, slug='test',
+            defaults={'name': 'Test', 'version': '2012'})
+        self.assertEqual(Revision.objects.count(), 1)
+        self.assertEqual(old_dataset.revision, Revision.objects.all()[0])
+        new_dataset = Dataset.revisions.create_or_revise(
+            bucket=self.bucket, source=self.source,
+            slug='test', version='2012', defaults={'name': 'Test'})
+        self.assertEqual(Revision.objects.count(), 2)
+        self.assertEqual(new_dataset.revision.previous, old_dataset.revision)
