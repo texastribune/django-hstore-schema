@@ -1,11 +1,13 @@
+from optparse import make_option
 import glob
 import os
-
-from optparse import make_option
 
 from csvkit import CSVKitDictReader
 from django.core.management.base import BaseCommand
 from django.template.defaultfilters import slugify
+
+from hstore_schema.models import Bucket, Source, Dataset
+from hstore_schema.registry import registries
 
 
 def package(files):
@@ -18,14 +20,22 @@ def get_files(version_path):
     return glob.glob(csv_pattern)
 
 
-def preview_file(dataset, csv):
+def preview_file(register, csv):
     with open(csv) as f:
         reader = CSVKitDictReader(f)
-        for data in reader:
-            print str(data)[:77] + '...'
+        for row in reader:
+            print str(row)[:77] + '...'
+            try:
+                key = register._key(row)
+            except KeyError:
+                key = None
+                import pprint
+                pprint.pprint(row)
+                exit()
+            print '->', repr(key)
 
 
-def load_file(dataset, f):
+def load_file(dataset, csv):
     pass
 
 
@@ -35,14 +45,16 @@ class Command(BaseCommand):
 
     Expects the following folder structure:
 
-    <source>/
-        csv/
-            <version_01>/
-                <version_01a>.csv
-                <version_01b>.csv
-            <version_02>/
-            <version_03>.csv
-            ...
+    <source1>
+    <source2>
+        <dataset1>/
+            csv/
+                <version_01>/
+                    <version_01a>.csv
+                    <version_01b>.csv
+                <version_02>/
+                <version_03>.csv
+                ...
     """
 
     help = 'Revise data using new source data and code'
@@ -50,26 +62,52 @@ class Command(BaseCommand):
         make_option('--preview', action='store_true', dest='preview',
             help='Print keys and values that will be generated without '
                  'actually saving the revised data'),
-        make_option('--bucket', action='store', dest='bucket'),
-        make_option('--dataset', action='store', dest='dataset'),
-        make_option('--versions', action='store', dest='version'),
+        make_option('--bucket', action='store', dest='bucket_slug'),
+        make_option('--dataset', action='store', dest='dataset_slug'),
+        make_option('--source', action='store', dest='source_slug'),
+        make_option('--versions', action='store', dest='versions'),
     )
 
-    def handle(self, csv_dir, bucket, dataset=None, **options):
+    def handle(self, csv_dir, bucket_slug, dataset_slug=None, source_slug=None,
+               versions=None, **options):
         csv_dir = os.path.abspath(csv_dir)
+        dataset_dir = os.path.dirname(csv_dir)
+        source_dir = os.path.dirname(dataset_dir)
 
         # Get dataset name from parent directory
-        if not dataset:
-            dataset = os.path.basename(os.path.dirname(csv_dir))
-            dataset = slugify(dataset).replace('_', '-')
+        if not dataset_slug:
+            dataset_slug = os.path.basename(dataset_dir)
+            dataset_slug = slugify(dataset_slug).replace('_', '-')
 
-        # TODO: create a new Version of the dataset
+        # Get source name from grandparent directory
+        if source_slug is None:
+            source_slug = os.path.basename(source_dir)
+            source_slug = slugify(source_slug).replace('_', '-')
 
-        # Load all versions of the data
+        # Get or create bucket
+        bucket, created = Bucket.objects.get_or_create(slug=bucket_slug,
+                defaults={'name': bucket_slug, 'short_name': bucket_slug})
+
+        # Get or create source
+        source, created = Source.objects.get_or_create(slug=source_slug,
+                defaults={'name': source_slug, 'short_name': source_slug})
+
+        # Get register for the dataset
+        registry = registries.get(bucket.slug, {})
+        register = registry.get(dataset_slug)
+
+        # Limit versions
+        if 'versions' in options:
+            versions = options['versions'].split(',')
+        else:
+            versions = None
+
+        # Load specified versions of the data
         version_pattern = os.path.join(csv_dir, '*')
         for version_path in glob.glob(version_pattern):
             version = os.path.basename(version_path)
-            dataset = None
+            if versions and version not in versions:
+                continue
 
             # If version_path is a directory, load all CSVs inside it;
             # if it is a CSV, load it directly.
@@ -80,4 +118,12 @@ class Command(BaseCommand):
 
             if 'preview' in options:
                 for csv in files:
-                    preview_file(dataset, csv)
+                    preview_file(register, csv)
+            else:
+                dataset = Dataset.revisions.create_or_revise(
+                    bucket=bucket, slug=dataset, version=version,
+                    defaults={'source': source})
+                for csv in files:
+                    load_file(dataset, csv)
+
+        # TODO: Revise data associated with datasets
