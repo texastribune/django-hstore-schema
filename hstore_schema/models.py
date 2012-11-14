@@ -80,11 +80,11 @@ class Dataset(models.Model):
     source = models.ForeignKey(Source, related_name='datasets')
 
     name = models.CharField(max_length=255)
-    slug = models.CharField(max_length=255, unique=True)
+    slug = models.CharField(max_length=255)
     raw = models.FileField(upload_to='datasets', blank=True, null=True)
 
     class Meta:
-        unique_together = ('bucket', 'slug', 'revision')
+        unique_together = ('bucket', 'revision', 'slug', 'version')
 
 
 class Record(models.Model):
