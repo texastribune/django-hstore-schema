@@ -73,7 +73,9 @@ class Dataset(models.Model):
     """
     bucket = models.ForeignKey(Bucket, related_name='datasets')
 
+    objects = models.Manager()
     revisions = RevisionManager()
+
     revision = models.ForeignKey(Revision, related_name='datasets')
     version = models.CharField(max_length=255)
 
@@ -121,7 +123,9 @@ class Data(models.Model):
     """
     Stores a typed field/value pair for a given key within a namespace.
     """
+    objects = models.Manager()
     revisions = RevisionManager()
+
     revision = models.ForeignKey(Revision, related_name='dataset')
     version = models.CharField(max_length=255)
 
@@ -148,7 +152,9 @@ class Transformation(models.Model):
     `source_field`: the direct source of the target primary Data
     `code`: the code used to tranform Records into secondary Data
     """
+    objects = models.Manager()
     revisions = RevisionManager()
+
     revision = models.ForeignKey(Revision)
 
     data = models.OneToOneField(Data, related_name='transformation')
