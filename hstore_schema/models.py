@@ -146,6 +146,7 @@ class Data(models.Model):
     version = models.CharField(max_length=255)
 
     key = models.SlugField()
+    slug = models.SlugField()
     label = models.CharField(max_length=255)
     value = jsonfield.JSONField()
     facets = hstore.DictionaryField(blank=True, null=True)
