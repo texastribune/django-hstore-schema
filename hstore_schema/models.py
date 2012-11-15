@@ -99,7 +99,6 @@ class Dataset(models.Model):
 
     name = models.CharField(max_length=255)
     slug = models.CharField(max_length=255)
-    fields = hstore.DictionaryField()
     raw = models.FileField(upload_to='datasets', blank=True, null=True)
 
     class Meta:
@@ -111,11 +110,6 @@ class Record(models.Model):
     Stores a raw record of data from a data source, such as a row from
     a CSV file or a JSON object.
 
-    Data is stored by default using the zero-indexed column number as
-    keys to avoid duplicating long field names in every single row of
-    the records table. Call `data_by_field` to get data with the
-    original headers.
-
     `data`: a dictionary of values keyed by the raw header
     `order`: the row number or list index in the raw file
     """
@@ -126,11 +120,6 @@ class Record(models.Model):
 
     label = models.CharField(max_length=255, blank=True, null=True)
     order = models.IntegerField()
-
-    @property
-    def data_by_field(self):
-        return dict([(self.dataset.fields[k], v)
-                     for k, v in self.data.items()])
 
 
 class Field(models.Model):

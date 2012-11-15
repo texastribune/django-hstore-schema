@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from hstore_schema.models import Bucket, Source, Revision, Dataset, Record
+from hstore_schema.models import Bucket, Source, Revision, Dataset
 
 
 class TestModels(TestCase):
@@ -45,15 +45,3 @@ class TestModels(TestCase):
             slug='test', version='2012', defaults={'name': 'Test'})
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(new_dataset.revision.previous, old_dataset.revision)
-
-    def test_record_headers(self):
-        fields = ['Field 1', 'Field 2']
-        values = ['1.0', '2.0']
-        data_by_field = dict(zip(fields, values))
-        dataset = Dataset(fields=fields)
-        record = Record(
-            dataset=dataset,
-            data=dict([(i, data_by_field[f])
-                       for i, f in enumerate(fields)]))
-        self.assertEqual(record.data, {0: '1.0', 1: '2.0'})
-        self.assertEqual(record.data_by_field, data_by_field)
