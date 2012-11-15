@@ -95,6 +95,6 @@ class Registry(dict):
         self[library.full_slug] = library
         return library
 
-    def get(self, slug, version=None):
+    def get(self, slug, default=None, version=None):
         full_slug = make_full_slug(slug, version)
-        return self[full_slug]
+        return super(Registry, self).get(full_slug, default)
