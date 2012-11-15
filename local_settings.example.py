@@ -7,3 +7,6 @@ DATABASES = {
         'OPTIONS': {'autocommit': True},
     },
 }
+
+from example_project.data.aeis.staff import *
+from example_project.data.aeis.taks import *
