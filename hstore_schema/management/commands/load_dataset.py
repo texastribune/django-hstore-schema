@@ -1,6 +1,7 @@
 from optparse import make_option
 import glob
 import os
+import sys
 
 from csvkit import CSVKitDictReader
 from django.core.management.base import BaseCommand
@@ -32,7 +33,13 @@ def preview_file(dataset, register, csv):
 
 
 def load_file(dataset, csv):
-    pass
+    with open(csv) as f:
+        base_name = os.path.basename(csv)
+        label, ext = os.path.splitext(base_name)
+        reader = CSVKitDictReader(f)
+        for data in reader:
+            Record.objects.create(dataset=dataset, data=data, label=label,
+                                  order=reader.line_num)
 
 
 class Command(BaseCommand):
@@ -119,6 +126,7 @@ class Command(BaseCommand):
                     bucket=bucket, slug=dataset_slug, version=version,
                     defaults={'source': source})
                 for csv in files:
+                    sys.stdout.write('loading "%s"...\n' % csv)
                     load_file(dataset, csv)
 
         # TODO: Revise data associated with datasets
