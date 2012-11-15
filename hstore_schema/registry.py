@@ -1,4 +1,5 @@
 from functools import wraps
+import re
 
 
 registries = {}
@@ -21,7 +22,7 @@ class Library(object):
 
         self._key = None
         self._facet = None
-        self._data = {}
+        self._field_data = {}
 
     @property
     def full_slug(self):
@@ -38,6 +39,50 @@ class Library(object):
             return inner
 
         return wrapper
+
+    def facet(self):
+        def wrapper(function):
+            @wraps(function)
+            def inner(record, field, value):
+                return function(record, field, value)
+
+            self._facet = inner
+            return inner
+
+        return wrapper
+
+    def field_data(self, namespace, label=None, pattern=None):
+        if pattern is not None:
+            pattern = re.compile(pattern)
+
+        def wrapper(function):
+            @wraps(function)
+            def inner(record):
+                for field, value in record.data.iteritems():
+                    if pattern and not pattern.match(field):
+                        continue
+                    if self._facet:
+                        facets = self._facet(record, field, value)
+                    else:
+                        facets = None
+                    yield function(record, field, value, facets=facets)
+
+            slug = '%s/%s' % (namespace, inner.func_name)
+            self._field_data[slug] = inner
+            return inner
+
+        return wrapper
+
+    def process(self, record):
+        if self._key:
+            key = self._key(record)
+        else:
+            key = None
+        for label, f in self._field_data.iteritems():
+            for kwargs in f(record):
+                if kwargs:
+                    print u'%s/%s' % (repr(key), label)
+                    print kwargs
 
 
 class Registry(dict):

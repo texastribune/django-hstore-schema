@@ -6,7 +6,7 @@ from csvkit import CSVKitDictReader
 from django.core.management.base import BaseCommand
 from django.template.defaultfilters import slugify
 
-from hstore_schema.models import Bucket, Source, Dataset
+from hstore_schema.models import Bucket, Source, Dataset, Record
 from hstore_schema.registry import registries
 
 
@@ -20,19 +20,15 @@ def get_files(version_path):
     return glob.glob(csv_pattern)
 
 
-def preview_file(register, csv):
+def preview_file(dataset, register, csv):
     with open(csv) as f:
+        base_name = os.path.basename(csv)
+        label, ext = os.path.splitext(base_name)
         reader = CSVKitDictReader(f)
-        for row in reader:
-            print str(row)[:77] + '...'
-            try:
-                key = register._key(row)
-            except KeyError:
-                key = None
-                import pprint
-                pprint.pprint(row)
-                exit()
-            print '->', repr(key)
+        for data in reader:
+            record = Record(dataset=dataset, data=data, label=label,
+                            order=reader.line_num)
+            register.process(record)
 
 
 def load_file(dataset, csv):
@@ -69,7 +65,7 @@ class Command(BaseCommand):
     )
 
     def handle(self, csv_dir, bucket_slug, dataset_slug=None, source_slug=None,
-               versions=None, **options):
+               versions=None, preview=False, **options):
         csv_dir = os.path.abspath(csv_dir)
         dataset_dir = os.path.dirname(csv_dir)
         source_dir = os.path.dirname(dataset_dir)
@@ -97,10 +93,8 @@ class Command(BaseCommand):
         register = registry.get(dataset_slug)
 
         # Limit versions
-        if 'versions' in options:
-            versions = options['versions'].split(',')
-        else:
-            versions = None
+        if versions is not None:
+            versions = versions.split(',')
 
         # Load specified versions of the data
         version_pattern = os.path.join(csv_dir, '*')
@@ -116,12 +110,13 @@ class Command(BaseCommand):
             elif version_path.lower().endswith('.csv'):
                 files = [version_path]
 
-            if 'preview' in options:
+            if preview:
                 for csv in files:
-                    preview_file(register, csv)
+                    dataset = Dataset(version=version)
+                    preview_file(dataset, register, csv)
             else:
                 dataset = Dataset.revisions.create_or_revise(
-                    bucket=bucket, slug=dataset, version=version,
+                    bucket=bucket, slug=dataset_slug, version=version,
                     defaults={'source': source})
                 for csv in files:
                     load_file(dataset, csv)

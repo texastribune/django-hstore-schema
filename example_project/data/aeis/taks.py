@@ -1,84 +1,83 @@
-bucket = Bucket.objects.get_or_create(slug='public-ed',
-        defaults={'name': 'Public Education', 'short_name': 'Public Ed'})
+import re
 
-source = Source.objects.get_or_create(slug="aeis",
-        defaults={'name': 'Academic Excellence Indicator System',
-                  'short_name': 'AEIS', 'attribution': 'TEA'})
+from example_project.data import registry
 
-campus_taks = Dataset(name='Campus TAKS', bucket=bucket, source=source)
+campus_taks = registry.register('campus-taks')
 
 
 @campus_taks.key(namespace='campus', keyspace='cdc')
-def key(record):
-    return record['current 9-digit cdc number']
+def campus_cdc_key(record):
+    return record.data['current 9-digit cdc number']
 
 
+@campus_taks.facet()
 def facet(record, field, value):
     facets = {}
 
     # Facet on grade level
-    match = re.search(r'Grade (\d+)', key)
+    match = re.search(r'Grade (\d+)', field)
     if match:
         facets['grade'] = match.group(1)
 
     # Facet on ethnicity
-    if 'Two or More Races' in key:
+    if 'Two or More Races' in field:
         facets['ethnicity'] = 'Two or More Races'
-    elif 'African American' in key:
+    elif 'African American' in field:
         facets['ethnicity'] = 'African American'
-    elif 'Hispanic' in key:
+    elif 'Hispanic' in field:
         facets['ethnicity'] = 'Hispanic'
-    elif 'Native American' in key:
+    elif 'Native American' in field:
         facets['ethnicity'] = 'Native American'
-    elif 'Asian/Pac Islander' in key:
+    elif 'Asian/Pac Islander' in field:
         facets['ethnicity'] = 'Asian/Pacific Islander'
-    elif 'Pacific Islander' in key:
+    elif 'Pacific Islander' in field:
         facets['ethnicity'] = 'Pacific Islander'
-    elif 'Asian' in key:
+    elif 'Asian' in field:
         facets['ethnicity'] = 'Asian'
-    elif 'White' in key:
+    elif 'White' in field:
         facets['ethnicity'] = 'White'
 
     # Facet on demographic
-    if 'LEP' in key:
+    if 'LEP' in field:
         facets['demographic'] = 'Limited English Proficient'
-    elif 'Econ Disadv' in key:
+    elif 'Econ Disadv' in field:
         facets['demographic'] = 'Economically Disavdantaged'
 
     # Facet on subject
-    if 'Mathematics' in key:
+    if 'Mathematics' in field:
         facets['subject'] = 'Math'
-    if 'Science' in key:
+    if 'Science' in field:
         facets['subject'] = 'Science'
-    elif 'Social Studies' in key:
+    elif 'Social Studies' in field:
         facets['subject'] = 'Social Studies'
-    elif 'Reading/ELA' in key:
+    elif 'Reading/ELA' in field:
         facets['subject'] = 'Reading/ELA'
-    elif 'Writing' in key:
+    elif 'Writing' in field:
         facets['subject'] = 'Writing'
 
     # Facet on gender
-    if 'Male' in key:
+    if 'Male' in field:
         facets['gender'] = 'Male'
-    elif 'Female' in key:
+    elif 'Female' in field:
         facets['gender'] = 'Female'
 
     # Facet on language
-    if 'Non-Spanish' in key:
+    if 'Non-Spanish' in field:
         facets['language'] = 'Spanish'
-    elif 'Spanish' in key:
+    elif 'Spanish' in field:
         facets['language'] = 'Spanish'
 
     return facets
 
 
 # TODO: Map/reduce Asian and Pacific Islander aggregate ethnicities
-@campus_taks.data(label='District Key', pattern=r'.* Rate$', facet=facet)
-def taks_passing_rate(record, field, value, facets):
+@campus_taks.field_data(namespace='campus', label='District Key',
+                        pattern=r'.* Rate$')
+def taks_passing_rate(record, field, value, facets=None):
     # Negative values are masked
     masked = False
     if value:
-        if value.startswith('-'):
+        if value.startswith('-') or value == '.':
             value = None
             masked = True
         else:
@@ -90,4 +89,6 @@ def taks_passing_rate(record, field, value, facets):
         'key': record.key,
         'value': value,
         'masked': masked,
+        'version': record.dataset.version,
+        'facets': facets,
     }
