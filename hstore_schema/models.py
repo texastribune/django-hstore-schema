@@ -1,5 +1,7 @@
+import os
 import uuid
 
+from csvkit import CSVKitDictReader
 from django.db import models
 from django_hstore import hstore
 import jsonfield
@@ -103,6 +105,22 @@ class Dataset(models.Model):
 
     class Meta:
         unique_together = ('bucket', 'revision', 'slug', 'version')
+
+    def load_csv(self, csv, batch_size=1000):
+        records = []
+        with open(csv) as f:
+            base_name = os.path.basename(csv)
+            label, ext = os.path.splitext(base_name)
+            reader = CSVKitDictReader(f)
+            for data in reader:
+                record = Record(dataset=self, data=data, label=label,
+                                order=reader.line_num)
+                records.append(record)
+                if len(records) >= batch_size:
+                    Record.objects.bulk_create(records)
+                    records = []
+            if records:
+                Record.objects.bulk_create(records)
 
 
 class Record(models.Model):

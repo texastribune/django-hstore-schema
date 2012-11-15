@@ -31,10 +31,6 @@ def preview_file(dataset, register, csv):
             register.process(record)
 
 
-def load_file(dataset, csv):
-    pass
-
-
 class Command(BaseCommand):
     """
     Loads a Dataset from tabular data from disk.
@@ -120,6 +116,8 @@ class Command(BaseCommand):
                     bucket=bucket, slug=dataset_slug, version=version,
                     defaults={'source': source})
                 for csv in files:
-                    load_file(dataset, csv)
+                    if options['verbosity'] == '2':
+                        print 'loading "%s"...' % csv
+                    dataset.load_csv(csv)
 
         # TODO: Revise data associated with datasets
