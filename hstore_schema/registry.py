@@ -97,4 +97,7 @@ class Registry(dict):
 
     def get(self, slug, version=None):
         full_slug = make_full_slug(slug, version)
-        return self[full_slug]
+        try:
+            return self[full_slug]
+        except KeyError:
+            return Library(slug, version)
