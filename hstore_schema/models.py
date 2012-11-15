@@ -152,6 +152,9 @@ class Data(models.Model):
     facets = hstore.DictionaryField(blank=True, null=True)
     primary = models.BooleanField(default=False)
 
+    class Meta:
+        unique_together = ('revision', 'key', 'slug', 'facets')
+
 
 class Code(models.Model):
     """
