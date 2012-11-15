@@ -56,12 +56,13 @@ class Command(BaseCommand):
     help = 'Revise data using new source data and code'
     option_list = BaseCommand.option_list + (
         make_option('--preview', action='store_true', dest='preview',
-            help='Print keys and values that will be generated without '
-                 'actually saving the revised data'),
+                help='Print keys and values that will be generated without '
+                     'actually saving the revised data'),
         make_option('--bucket', action='store', dest='bucket_slug'),
         make_option('--dataset', action='store', dest='dataset_slug'),
         make_option('--source', action='store', dest='source_slug'),
-        make_option('--versions', action='store', dest='versions'),
+        make_option('--versions', action='store', dest='versions',
+                help='A comma-separated list of versions to load.'),
     )
 
     def handle(self, csv_dir, bucket_slug, dataset_slug=None, source_slug=None,
