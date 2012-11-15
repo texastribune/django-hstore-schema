@@ -25,7 +25,9 @@ def preview_file(dataset, register, csv):
         base_name = os.path.basename(csv)
         label, ext = os.path.splitext(base_name)
         reader = CSVKitDictReader(f)
-        for data in reader:
+        dataset.fields = reader.fieldnames
+        for row in reader:
+            data = dict([(i, row[f]) for i, f in enumerate(reader.fieldnames)])
             record = Record(dataset=dataset, data=data, label=label,
                             order=reader.line_num)
             register.process(record)
