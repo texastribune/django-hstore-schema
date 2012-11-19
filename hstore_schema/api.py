@@ -1,56 +1,51 @@
-import json
+from rest_framework import generics
+from rest_framework.decorators import api_view
+from rest_framework.reverse import reverse
+from rest_framework.response import Response
 
-from django.core import serializers
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.views.generic import View
-
-from hstore_schema.models import Bucket, Dataset, Record
-
-
-class Resource(View):
-    limit = 100
-
-    def get(self, request, *args, **kwargs):
-        qs = self.get_query_set(request, *args, **kwargs)
-        if self.limit:
-            qs = qs[:self.limit]
-        content = serializers.serialize('json', qs)
-        return HttpResponse(content, content_type='application/json')
+from hstore_schema.models import Bucket, Dataset, Field, Record, Revision
+from hstore_schema.serializers import (BucketSerializer, DatasetSerializer,
+        RecordSerializer, RevisionSerializer)
 
 
-class BucketListResource(Resource):
-    limit = None
-
-    def get_query_set(self, request, *args, **kwargs):
-        return Bucket.objects.all()
-
-
-class DatasetListResource(Resource):
-    limit = None
-
-    def get_query_set(self, request, bucket_slug, **kwargs):
-        return (Dataset.revisions
-                .current().filter(bucket__slug=bucket_slug)
-                .select_related('source'))
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'buckets': reverse('bucket_list', request=request),
+        'datasets': reverse('dataset_list', request=request),
+        'fields': reverse('field_list', request=request),
+        'records': reverse('record_list', request=request),
+    })
 
 
-
-class DatasetResource(Resource):
-    def get_dataset(self):
-        return (Dataset.revisions.current()
-                .get(bucket__slug=self.kwargs.get('bucket_slug'),
-                     slug=self.kwargs.get('dataset_slug'),
-                     version=self.kwargs.get('version')))
+class BucketList(generics.ListAPIView):
+    model = Bucket
+    serializer_class = BucketSerializer
 
 
-class RecordListResource(DatasetResource):
-    def get_query_set(self, request, bucket_slug, dataset_slug, version):
-        dataset = self.get_dataset()
-        return dataset.records.all()
+class BucketDetail(generics.RetrieveAPIView):
+    model = Bucket
+    serializer_class = BucketSerializer
 
 
-class DatasetFieldListResource(DatasetResource):
-    def get_query_set(self, request, bucket_slug, dataset_slug, version):
-        dataset = self.get_dataset()
-        return dataset.fields.all()
+class DatasetList(generics.ListAPIView):
+    model = Dataset
+    serializer_class = DatasetSerializer
+
+
+class DatasetDetail(generics.RetrieveAPIView):
+    model = Dataset
+    serializer_class = DatasetSerializer
+
+
+class RecordList(generics.ListAPIView):
+    model = Record
+
+
+class FieldList(generics.ListAPIView):
+    model = Field
+
+
+class RevisionDetail(generics.RetrieveAPIView):
+    model = Revision
+    serializer_class = RevisionSerializer

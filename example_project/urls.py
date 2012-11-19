@@ -1,30 +1,39 @@
-from django.conf.urls.defaults import patterns, include, url
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.contrib import admin
+from django.conf.urls import patterns, url, include
+from rest_framework.urlpatterns import format_suffix_patterns
 
-admin.autodiscover()
-urlpatterns = patterns('',
-    (r'^admin/', include(admin.site.urls)),
+from hstore_schema.api import (BucketList, BucketDetail, DatasetList,
+        DatasetDetail, RecordList, RevisionDetail, FieldList)
+
+
+urlpatterns = patterns('hstore_schema.api',
+    url(r'^$', 'api_root'),
+    url(r'^buckets/$',
+        BucketList.as_view(),
+        name='bucket_list'),
+    url(r'^bucket/(?P<pk>[\w\-\_]+)/$',
+        BucketDetail.as_view(),
+        name='bucket_detail'),
+    url(r'^datasets/$',
+        DatasetList.as_view(),
+        name='dataset_list'),
+    url(r'^datasets/(?P<pk>\d+)/$',
+        DatasetDetail.as_view(),
+        'dataset_detail'),
+    url(r'^records/$',
+        RecordList.as_view(),
+        name='record_list'),
+    url(r'^revisions/(?P<pk>\d+)/$',
+        RevisionDetail.as_view(),
+        name='revision_detail'),
+    url(r'^fields/$',
+        FieldList.as_view(),
+        name='field_list')
 )
-urlpatterns += staticfiles_urlpatterns()
 
+# Format suffixes
+urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'api'])
 
-# API URLs
-from hstore_schema.api import *
-
-urlpatterns +=patterns('',
-    url(r'^api/buckets/$',
-            BucketListResource.as_view(),
-            name='bucket_list_resource'),
-    url(r'^api/datasets/(?P<bucket_slug>[\w\-\_]+)/$',
-            DatasetListResource.as_view(),
-            name='bucket_list_resource'),
-    url(r'^api/records/(?P<bucket_slug>[\w\-\_]+)/' + \
-        r'(?P<dataset_slug>[\w\-\_]+)/(?P<version>[\w\-\_]+)/$',
-            RecordListResource.as_view(),
-            name='dataset_list_resource'),
-    url(r'^api/fields/(?P<bucket_slug>[\w\-\_]+)/' + \
-        r'(?P<dataset_slug>[\w\-\_]+)/(?P<version>[\w\-\_]+)/$',
-            DatasetFieldListResource.as_view(),
-            name='dataset_field_list_resource'),
+# Default login/logout views
+urlpatterns += patterns('',
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 )
