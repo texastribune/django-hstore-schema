@@ -35,10 +35,22 @@ class DatasetListResource(Resource):
                 .select_related('source'))
 
 
-class RecordListResource(Resource):
+
+class DatasetResource(Resource):
+    def get_dataset(self):
+        return (Dataset.revisions.current()
+                .get(bucket__slug=self.kwargs.get('bucket_slug'),
+                     slug=self.kwargs.get('dataset_slug'),
+                     version=self.kwargs.get('version')))
+
+
+class RecordListResource(DatasetResource):
     def get_query_set(self, request, bucket_slug, dataset_slug, version):
-        dataset = (Dataset.revisions
-                   .current()
-                   .get(bucket__slug=bucket_slug, slug=dataset_slug,
-                        version=version))
+        dataset = self.get_dataset()
         return dataset.records.all()
+
+
+class DatasetFieldListResource(DatasetResource):
+    def get_query_set(self, request, bucket_slug, dataset_slug, version):
+        dataset = self.get_dataset()
+        return dataset.fields.all()

@@ -23,4 +23,8 @@ urlpatterns +=patterns('',
         r'(?P<dataset_slug>[\w\-\_]+)/(?P<version>[\w\-\_]+)/$',
             RecordListResource.as_view(),
             name='dataset_list_resource'),
+    url(r'^api/fields/(?P<bucket_slug>[\w\-\_]+)/' + \
+        r'(?P<dataset_slug>[\w\-\_]+)/(?P<version>[\w\-\_]+)/$',
+            DatasetFieldListResource.as_view(),
+            name='dataset_field_list_resource'),
 )
