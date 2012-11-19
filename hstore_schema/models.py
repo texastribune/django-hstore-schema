@@ -112,6 +112,13 @@ class Dataset(models.Model):
             base_name = os.path.basename(csv)
             label, ext = os.path.splitext(base_name)
             reader = CSVKitDictReader(f)
+
+            # Save field names
+            for order, name in enumerate(reader.fieldnames):
+                Field.objects.create(dataset=self, label=label, order=order,
+                                     name=name)
+
+            # Read records and save in batches
             for data in reader:
                 record = Record(dataset=self, data=data, label=label,
                                 order=reader.line_num)
@@ -119,6 +126,8 @@ class Dataset(models.Model):
                 if len(records) >= batch_size:
                     Record.objects.bulk_create(records)
                     records = []
+
+            # Save any remaining records
             if records:
                 Record.objects.bulk_create(records)
 
@@ -147,10 +156,10 @@ class Field(models.Model):
     `name`: the display name for the field
     `label`: the field used to label the data in a resulting Schema
     """
-    namespace = models.ForeignKey(Namespace, related_name='fields')
-
-    raw_name = models.CharField(max_length=255)
-    display_name = models.CharField(max_length=255, blank=True, null=True)
+    dataset = models.ForeignKey(Dataset, related_name='fields')
+    label = models.CharField(max_length=255, blank=True, null=True)
+    order = models.IntegerField()
+    name = models.CharField(max_length=255)
 
 
 class Data(models.Model):
