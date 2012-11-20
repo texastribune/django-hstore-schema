@@ -105,6 +105,7 @@ class Dataset(models.Model):
 
     class Meta:
         unique_together = ('bucket', 'revision', 'slug', 'version')
+        ordering = ('bucket', 'slug', 'version')
 
     def load_csv(self, csv, batch_size=1000):
         records = []
@@ -148,6 +149,9 @@ class Record(models.Model):
     label = models.CharField(max_length=255, blank=True, null=True)
     order = models.IntegerField()
 
+    class Meta:
+        ordering = ('dataset', 'label', 'order')
+
 
 class Field(models.Model):
     """
@@ -160,6 +164,9 @@ class Field(models.Model):
     label = models.CharField(max_length=255, blank=True, null=True)
     order = models.IntegerField()
     name = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ('dataset', 'label', 'order')
 
 
 class Data(models.Model):
