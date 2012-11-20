@@ -2,32 +2,35 @@ from django.conf.urls import patterns, url, include
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from hstore_schema.api import (BucketList, BucketDetail, DatasetList,
-        DatasetDetail, RecordList, RevisionDetail, FieldList)
+        DatasetDetail, RecordList, RevisionDetail, FieldList, SourceDetail)
 
 
 urlpatterns = patterns('hstore_schema.api',
     url(r'^$', 'api_root'),
     url(r'^buckets/$',
         BucketList.as_view(),
-        name='bucket_list'),
+        name='bucket-list'),
     url(r'^bucket/(?P<pk>[\w\-\_]+)/$',
         BucketDetail.as_view(),
-        name='bucket_detail'),
+        name='bucket-detail'),
     url(r'^datasets/$',
         DatasetList.as_view(),
-        name='dataset_list'),
+        name='dataset-list'),
     url(r'^datasets/(?P<pk>\d+)/$',
         DatasetDetail.as_view(),
-        'dataset_detail'),
+        'dataset-detail'),
     url(r'^records/$',
         RecordList.as_view(),
-        name='record_list'),
+        name='record-list'),
     url(r'^revisions/(?P<pk>\d+)/$',
         RevisionDetail.as_view(),
-        name='revision_detail'),
+        name='revision-detail'),
     url(r'^fields/$',
         FieldList.as_view(),
-        name='field_list')
+        name='field-list'),
+    url(r'^sources/(?P<pk>\d+)/$',
+        SourceDetail.as_view(),
+        name='source-detail'),
 )
 
 # Format suffixes

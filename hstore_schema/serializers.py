@@ -1,4 +1,5 @@
-from rest_framework.serializers import HyperlinkedModelSerializer
+from rest_framework.serializers import (HyperlinkedModelSerializer,
+        ManyHyperlinkedRelatedField, CharField)
 
 from hstore_schema.models import Bucket, Dataset, Record, Field, Revision
 
@@ -16,9 +17,11 @@ class DatasetSerializer(HyperlinkedModelSerializer):
 
 
 class RevisionSerializer(HyperlinkedModelSerializer):
+    time = CharField(source='time', read_only=True)
+
     class Meta:
         model = Revision
-        fields = ('digest', 'previous', 'timestamp',)
+        fields = ('digest', 'previous', 'time',)
 
 
 class RecordSerializer(HyperlinkedModelSerializer):

@@ -3,18 +3,19 @@ from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
 from rest_framework.response import Response
 
-from hstore_schema.models import Bucket, Dataset, Field, Record, Revision
+from hstore_schema.models import (Bucket, Dataset, Field, Record, Revision,
+        Source)
 from hstore_schema.serializers import (BucketSerializer, DatasetSerializer,
-        RecordSerializer, RevisionSerializer)
+        FieldSerializer, RecordSerializer, RevisionSerializer)
 
 
 @api_view(['GET'])
 def api_root(request, format=None):
     return Response({
-        'buckets': reverse('bucket_list', request=request),
-        'datasets': reverse('dataset_list', request=request),
-        'fields': reverse('field_list', request=request),
-        'records': reverse('record_list', request=request),
+        'buckets': reverse('bucket-list', request=request),
+        'datasets': reverse('dataset-list', request=request),
+        'fields': reverse('field-list', request=request),
+        'records': reverse('record-list', request=request),
     })
 
 
@@ -44,8 +45,13 @@ class RecordList(generics.ListAPIView):
 
 class FieldList(generics.ListAPIView):
     model = Field
+    serializer_class = FieldSerializer
 
 
 class RevisionDetail(generics.RetrieveAPIView):
     model = Revision
     serializer_class = RevisionSerializer
+
+
+class SourceDetail(generics.RetrieveAPIView):
+    model = Source
