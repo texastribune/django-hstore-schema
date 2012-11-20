@@ -1,57 +1,95 @@
-from rest_framework import generics
-from rest_framework.decorators import api_view
-from rest_framework.reverse import reverse
-from rest_framework.response import Response
+from django.core.urlresolvers import reverse
+from tastypie import fields
+from tastypie import serializers
+from tastypie.resources import Resource, ModelResource
 
-from hstore_schema.models import (Bucket, Dataset, Field, Record, Revision,
-        Source)
-from hstore_schema.serializers import (BucketSerializer, DatasetSerializer,
-        FieldSerializer, RecordSerializer, RevisionSerializer)
+from hstore_schema.models import *
 
 
-@api_view(['GET'])
-def api_root(request, format=None):
-    return Response({
-        'buckets': reverse('bucket-list', request=request),
-        'datasets': reverse('dataset-list', request=request),
-        'fields': reverse('field-list', request=request),
-        'records': reverse('record-list', request=request),
-    })
+class ReadOnlyJSONResource(ModelResource):
+    class Meta:
+        allowed_methods = ['get']
+
+    def determine_format(self, request):
+        return 'application/json'
 
 
-class BucketList(generics.ListAPIView):
-    model = Bucket
-    serializer_class = BucketSerializer
+class RootResource(ReadOnlyJSONResource):
+    class Meta:
+        pass
+
+    def get_list(self):
+        return {
+            'buckets_uri': reverse('bucket_list', request=request),
+            'datasets_uri': reverse('dataset_list', request=request),
+            'fields_uri': reverse('field_list', request=request),
+            'records_uri': reverse('record_list', request=request),
+        }
 
 
-class BucketDetail(generics.RetrieveAPIView):
-    model = Bucket
-    serializer_class = BucketSerializer
+class BucketResource(ReadOnlyJSONResource):
+    class Meta:
+        queryset = Bucket.objects.all()
+        resource_name = 'buckets'
 
 
-class DatasetList(generics.ListAPIView):
-    model = Dataset
-    serializer_class = DatasetSerializer
+class DatasetResource(ReadOnlyJSONResource):
+    bucket = fields.ForeignKey(BucketResource, 'bucket')
+
+    class Meta:
+        queryset = Dataset.objects.all()
+        resource_name = 'datasets'
+
+    def dehydrate(self, bundle):
+        records_uri = reverse('api_dispatch_list', kwargs={
+            'resource_name': 'records',
+            'bucket_slug': bundle.obj.bucket.slug,
+            'dataset_slug': bundle.obj.slug,
+            'version': bundle.obj.version,
+        })
+        bundle.data['records'] = records_uri
+
+        fields_uri = reverse('api_dispatch_list', kwargs={
+            'resource_name': 'fields',
+            'bucket_slug': bundle.obj.bucket.slug,
+            'dataset_slug': bundle.obj.slug,
+            'version': bundle.obj.version,
+        })
+        bundle.data['fields'] = fields_uri
+        return bundle
 
 
-class DatasetDetail(generics.RetrieveAPIView):
-    model = Dataset
-    serializer_class = DatasetSerializer
+class DatasetRelatedResource(ReadOnlyJSONResource):
+    def dispatch(self, *args, **kwargs):
+        bucket_slug = kwargs.pop('bucket_slug', None)
+        dataset_slug = kwargs.pop('dataset_slug', None)
+        version = kwargs.pop('version', None)
+        kwargs['dataset'] = (Dataset.revisions.current()
+                             .get(bucket__slug=bucket_slug,
+                                  slug=dataset_slug,
+                                  version=version))
+        return super(DatasetRelatedResource, self).dispatch(*args, **kwargs)
 
 
-class RecordList(generics.ListAPIView):
-    model = Record
+class RecordResource(DatasetRelatedResource):
+    dataset = fields.ForeignKey(DatasetResource, 'dataset')
+
+    class Meta:
+        queryset = Record.objects.all()
+        resource_name = 'records'
+        filtering = {
+            'dataset': ('exact',)
+        }
+
+    def dehydrate_data(self, bundle):
+        return bundle.obj.data
 
 
-class FieldList(generics.ListAPIView):
-    model = Field
-    serializer_class = FieldSerializer
-
-
-class RevisionDetail(generics.RetrieveAPIView):
-    model = Revision
-    serializer_class = RevisionSerializer
-
-
-class SourceDetail(generics.RetrieveAPIView):
-    model = Source
+class FieldResource(DatasetRelatedResource):
+    class Meta:
+        queryset = Field.objects.all()
+        resource_name = 'fields'
+        excludes = ('id',)
+        filtering = {
+            'dataset': ('exact',)
+        }

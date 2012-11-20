@@ -1,42 +1,24 @@
 from django.conf.urls import patterns, url, include
-from rest_framework.urlpatterns import format_suffix_patterns
+from tastypie.api import Api
 
-from hstore_schema.api import (BucketList, BucketDetail, DatasetList,
-        DatasetDetail, RecordList, RevisionDetail, FieldList, SourceDetail)
+from hstore_schema.api import *
 
 
-urlpatterns = patterns('hstore_schema.api',
-    url(r'^$', 'api_root'),
-    url(r'^buckets/$',
-        BucketList.as_view(),
-        name='bucket-list'),
-    url(r'^bucket/(?P<pk>[\w\-\_]+)/$',
-        BucketDetail.as_view(),
-        name='bucket-detail'),
-    url(r'^datasets/$',
-        DatasetList.as_view(),
-        name='dataset-list'),
-    url(r'^datasets/(?P<pk>\d+)/$',
-        DatasetDetail.as_view(),
-        'dataset-detail'),
-    url(r'^records/$',
-        RecordList.as_view(),
-        name='record-list'),
-    url(r'^revisions/(?P<pk>\d+)/$',
-        RevisionDetail.as_view(),
-        name='revision-detail'),
-    url(r'^fields/$',
-        FieldList.as_view(),
-        name='field-list'),
-    url(r'^sources/(?P<pk>\d+)/$',
-        SourceDetail.as_view(),
-        name='source-detail'),
-)
+v1_api = Api(api_name='v1')
 
-# Format suffixes
-urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'api'])
+v1_api.register(RootResource())
+v1_api.register(BucketResource())
+v1_api.register(DatasetResource())
 
-# Default login/logout views
-urlpatterns += patterns('',
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+record_resource = RecordResource()
+field_resource = FieldResource()
+v1_api.register(record_resource)
+v1_api.register(field_resource)
+
+urlpatterns = patterns('',
+    url(r'^api/v1/records/(?P<bucket_slug>\w[\w\-]+)/(?P<dataset_slug>\w[\w\-]+)/(?P<version>\w[\w\-]+)/',
+        include(record_resource.urls)),
+    url(r'^api/v1/fields/(?P<bucket_slug>\w[\w\-]+)/(?P<dataset_slug>\w[\w\-]+)/(?P<version>\w[\w\-]+)/',
+        include(field_resource.urls)),
+    url(r'^api/', include(v1_api.urls)),
 )

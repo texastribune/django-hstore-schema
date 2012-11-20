@@ -23,7 +23,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'rest_framework',
+    'tastypie',
     'example_project',
     'hstore_schema',
 )
