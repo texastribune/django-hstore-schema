@@ -32,16 +32,6 @@ def preview_file(dataset, register, csv):
             register.process(record)
 
 
-def load_file(dataset, csv):
-    with open(csv) as f:
-        base_name = os.path.basename(csv)
-        label, ext = os.path.splitext(base_name)
-        reader = CSVKitDictReader(f)
-        for data in reader:
-            Record.objects.create(dataset=dataset, data=data, label=label,
-                                  order=reader.line_num)
-
-
 class Command(BaseCommand):
     """
     Loads a Dataset from tabular data from disk.
@@ -63,12 +53,13 @@ class Command(BaseCommand):
     help = 'Revise data using new source data and code'
     option_list = BaseCommand.option_list + (
         make_option('--preview', action='store_true', dest='preview',
-            help='Print keys and values that will be generated without '
-                 'actually saving the revised data'),
+                help='Print keys and values that will be generated without '
+                     'actually saving the revised data'),
         make_option('--bucket', action='store', dest='bucket_slug'),
         make_option('--dataset', action='store', dest='dataset_slug'),
         make_option('--source', action='store', dest='source_slug'),
-        make_option('--versions', action='store', dest='versions'),
+        make_option('--versions', action='store', dest='versions',
+                help='A comma-separated list of versions to load.'),
     )
 
     def handle(self, csv_dir, bucket_slug, dataset_slug=None, source_slug=None,
@@ -126,7 +117,8 @@ class Command(BaseCommand):
                     bucket=bucket, slug=dataset_slug, version=version,
                     defaults={'source': source})
                 for csv in files:
-                    sys.stdout.write('loading "%s"...\n' % csv)
-                    load_file(dataset, csv)
+                    if options['verbosity'] == '2':
+                        print 'loading "%s"...' % csv
+                    dataset.load_csv(csv)
 
         # TODO: Revise data associated with datasets

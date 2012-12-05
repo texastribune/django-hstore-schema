@@ -1,5 +1,7 @@
+import os
 import uuid
 
+from csvkit import CSVKitDictReader
 from django.db import models
 from django_hstore import hstore
 import jsonfield
@@ -103,6 +105,32 @@ class Dataset(models.Model):
 
     class Meta:
         unique_together = ('bucket', 'revision', 'slug', 'version')
+        ordering = ('bucket', 'slug', 'version')
+
+    def load_csv(self, csv, batch_size=1000):
+        records = []
+        with open(csv) as f:
+            base_name = os.path.basename(csv)
+            label, ext = os.path.splitext(base_name)
+            reader = CSVKitDictReader(f)
+
+            # Save field names
+            for order, name in enumerate(reader.fieldnames):
+                Field.objects.create(dataset=self, label=label, order=order,
+                                     name=name)
+
+            # Read records and save in batches
+            for data in reader:
+                record = Record(dataset=self, data=data, label=label,
+                                order=reader.line_num)
+                records.append(record)
+                if len(records) >= batch_size:
+                    Record.objects.bulk_create(records)
+                    records = []
+
+            # Save any remaining records
+            if records:
+                Record.objects.bulk_create(records)
 
 
 class Record(models.Model):
@@ -121,6 +149,9 @@ class Record(models.Model):
     label = models.CharField(max_length=255, blank=True, null=True)
     order = models.IntegerField()
 
+    class Meta:
+        ordering = ('dataset', 'label', 'order')
+
 
 class Field(models.Model):
     """
@@ -129,10 +160,13 @@ class Field(models.Model):
     `name`: the display name for the field
     `label`: the field used to label the data in a resulting Schema
     """
-    namespace = models.ForeignKey(Namespace, related_name='fields')
+    dataset = models.ForeignKey(Dataset, related_name='fields')
+    label = models.CharField(max_length=255, blank=True, null=True)
+    order = models.IntegerField()
+    name = models.CharField(max_length=255)
 
-    raw_name = models.CharField(max_length=255)
-    display_name = models.CharField(max_length=255, blank=True, null=True)
+    class Meta:
+        ordering = ('dataset', 'label', 'order')
 
 
 class Data(models.Model):
