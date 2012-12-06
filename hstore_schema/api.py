@@ -1,6 +1,5 @@
 from django.core.urlresolvers import reverse
 from tastypie import fields
-from tastypie import serializers
 from tastypie.resources import Resource, ModelResource
 
 from hstore_schema.models import *
@@ -10,8 +9,30 @@ class ReadOnlyJSONResource(ModelResource):
     class Meta:
         allowed_methods = ['get']
 
+    def create_response(self, request, data, *args, **kwargs):
+        meta = data.get('meta')
+        if meta:
+            host = request.get_host()
+            next = meta.get('next')
+            if next:
+                meta['next'] = u'http://%s%s' % (host, meta['next'])
+            previous = meta.get('previous')
+            if previous:
+                meta['previous'] = u'http://%s%s' % (host, meta['previous'])
+
+        return (super(ReadOnlyJSONResource, self)
+                .create_response(request, data, *args, **kwargs))
+
     def determine_format(self, request):
         return 'application/json'
+
+    def dehydrate(self, bundle):
+        host = bundle.request.get_host()
+        for key in bundle.data:
+            if key.endswith('_uri'):
+                # key = key.replace('_uri', '_url')
+                bundle.data[key] = 'http://%s%s' % (host, bundle.data[key])
+        return bundle
 
 
 class RootResource(ReadOnlyJSONResource):
@@ -47,7 +68,7 @@ class DatasetResource(ReadOnlyJSONResource):
             'dataset_slug': bundle.obj.slug,
             'version': bundle.obj.version,
         })
-        bundle.data['records'] = records_uri
+        bundle.data['records_uri'] = records_uri
 
         fields_uri = reverse('api_dispatch_list', kwargs={
             'resource_name': 'fields',
@@ -55,8 +76,9 @@ class DatasetResource(ReadOnlyJSONResource):
             'dataset_slug': bundle.obj.slug,
             'version': bundle.obj.version,
         })
-        bundle.data['fields'] = fields_uri
-        return bundle
+        bundle.data['fields_uri'] = fields_uri
+
+        return super(DatasetResource, self).dehydrate(bundle)
 
 
 class DatasetRelatedResource(ReadOnlyJSONResource):
