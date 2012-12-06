@@ -6,6 +6,8 @@ from django.db import models
 from django_hstore import hstore
 import jsonfield
 
+from hstore_schema.registry import registries
+
 
 class Bucket(models.Model):
     """
@@ -151,6 +153,29 @@ class Record(models.Model):
 
     class Meta:
         ordering = ('dataset', 'label', 'order')
+
+    @property
+    def _register(self):
+        registry = registries.get(self.dataset.bucket.slug)
+        return registry.get(self.dataset.slug)
+
+    @property
+    def _data(self):
+        data = []
+        if self._register and self._register._field_data:
+            for label, f in self._register._field_data.iteritems():
+                for d in f(self):
+                    if d:
+                        data.append(d)
+
+        return data
+
+    @property
+    def _key(self):
+        if self._register and self._register._key:
+            return self._register._key(self)
+
+        return None
 
 
 class Field(models.Model):

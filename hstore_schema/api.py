@@ -97,11 +97,17 @@ class RecordResource(DatasetRelatedResource):
     dataset = fields.ForeignKey(DatasetResource, 'dataset')
 
     class Meta:
-        queryset = Record.objects.all()
+        queryset = Record.objects.select_related()
         resource_name = 'records'
         filtering = {
             'dataset': ('exact',)
         }
+
+    def dehydrate(self, bundle):
+        bundle.data['_key'] = bundle.obj._key
+        bundle.data['_data'] = bundle.obj._data
+        return super(RecordResource, self).dehydrate(bundle)
+
 
     def dehydrate_data(self, bundle):
         return bundle.obj.data
