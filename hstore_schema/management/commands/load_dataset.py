@@ -107,6 +107,7 @@ class Command(BaseCommand):
                 files = get_files(version_path)
             elif version_path.lower().endswith('.csv'):
                 files = [version_path]
+                version, ext = os.path.splitext(version_path)
 
             if preview:
                 for csv in files:
