@@ -1,3 +1,5 @@
+import urllib
+
 from django.core.urlresolvers import reverse
 from tastypie import fields
 from tastypie.resources import Resource, ModelResource
@@ -34,6 +36,16 @@ class ReadOnlyJSONResource(ModelResource):
                 bundle.data[key] = 'http://%s%s' % (host, bundle.data[key])
         return bundle
 
+    def reverse_dataset_url(self, name, dataset, **kwargs):
+        kwargs.update(api_name=self._meta.api_name)
+        url = reverse(name, kwargs=kwargs)
+        parameters = urllib.urlencode({
+            'dataset__bucket__slug': dataset.bucket.slug,
+            'dataset__slug': dataset.slug,
+            'dataset_version': dataset.version
+        })
+        return u'%s?%s' % (url, parameters)
+
 
 class RootResource(ReadOnlyJSONResource):
     class Meta:
@@ -62,46 +74,27 @@ class DatasetResource(ReadOnlyJSONResource):
         resource_name = 'datasets'
 
     def dehydrate(self, bundle):
-        records_uri = reverse('api_dispatch_list', kwargs={
-            'resource_name': 'records',
-            'bucket_slug': bundle.obj.bucket.slug,
-            'dataset_slug': bundle.obj.slug,
-            'version': bundle.obj.version,
-        })
-        bundle.data['records_uri'] = records_uri
-
-        fields_uri = reverse('api_dispatch_list', kwargs={
-            'resource_name': 'fields',
-            'bucket_slug': bundle.obj.bucket.slug,
-            'dataset_slug': bundle.obj.slug,
-            'version': bundle.obj.version,
-        })
-        bundle.data['fields_uri'] = fields_uri
+        bundle.data['records_uri'] = self.reverse_dataset_url(
+            'api_dispatch_list', bundle.obj, resource_name='records')
+        bundle.data['fields_uri'] = self.reverse_dataset_url(
+            'api_dispatch_list', bundle.obj, resource_name='fields')
 
         return super(DatasetResource, self).dehydrate(bundle)
 
 
 class DatasetRelatedResource(ReadOnlyJSONResource):
-    def dispatch(self, *args, **kwargs):
-        bucket_slug = kwargs.pop('bucket_slug', None)
-        dataset_slug = kwargs.pop('dataset_slug', None)
-        version = kwargs.pop('version', None)
-        kwargs['dataset'] = (Dataset.revisions.current()
-                             .get(bucket__slug=bucket_slug,
-                                  slug=dataset_slug,
-                                  version=version))
-        return super(DatasetRelatedResource, self).dispatch(*args, **kwargs)
+    class Meta:
+        filtering = {
+            'dataset__slug': ('exact',),
+            'dataset__version': ('exact',),
+            'dataset__bucket__slug': ('exact',)
+        }
 
 
 class RecordResource(DatasetRelatedResource):
-    dataset = fields.ForeignKey(DatasetResource, 'dataset')
-
     class Meta:
         queryset = Record.objects.select_related()
         resource_name = 'records'
-        filtering = {
-            'dataset': ('exact',)
-        }
 
     def dehydrate(self, bundle):
         bundle.data['_key'] = bundle.obj._key
@@ -118,6 +111,3 @@ class FieldResource(DatasetRelatedResource):
         queryset = Field.objects.all()
         resource_name = 'fields'
         excludes = ('id',)
-        filtering = {
-            'dataset': ('exact',)
-        }
