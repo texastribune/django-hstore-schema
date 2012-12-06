@@ -7,7 +7,15 @@ campus_taks = registry.register('campus-taks')
 
 @campus_taks.key(namespace='campus', keyspace='cdc')
 def campus_cdc_key(record):
-    return record.data['current 9-digit cdc number']
+    for key in ['current 9-digit cdc number',
+                'Campus Number',
+                ]:
+        try:
+            return record.data[key]
+        except KeyError:
+            pass
+
+    raise KeyError
 
 
 @campus_taks.facet()
