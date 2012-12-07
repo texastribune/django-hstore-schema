@@ -12,7 +12,7 @@ class ReadOnlyJSONResource(ModelResource):
         allowed_methods = ['get']
 
     def create_response(self, request, data, *args, **kwargs):
-        meta = data.get('meta')
+        meta = getattr(data, 'meta', None)
         if meta:
             host = request.get_host()
             next = meta.get('next')
