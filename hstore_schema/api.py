@@ -1,125 +1,221 @@
+import json
 import urllib
 
+from django.conf.urls import patterns, url
+from django.core.paginator import Paginator
+from django.core.serializers.python import Serializer as PythonSerializer
 from django.core.urlresolvers import reverse
-from tastypie import fields
-from tastypie.constants import ALL_WITH_RELATIONS
-from tastypie.resources import Resource, ModelResource
+from django.http import HttpResponse
+from django.views.generic import View
 
 from hstore_schema.models import *
 
-
-class ReadOnlyJSONResource(ModelResource):
-    class Meta:
-        allowed_methods = ['get']
-
-    def create_response(self, request, data, *args, **kwargs):
-        meta = getattr(data, 'meta', None)
-        if meta:
-            host = request.get_host()
-            next = meta.get('next')
-            if next:
-                meta['next'] = u'http://%s%s' % (host, meta['next'])
-            previous = meta.get('previous')
-            if previous:
-                meta['previous'] = u'http://%s%s' % (host, meta['previous'])
-
-        return (super(ReadOnlyJSONResource, self)
-                .create_response(request, data, *args, **kwargs))
-
-    def determine_format(self, request):
-        return 'application/json'
-
-    def dehydrate(self, bundle):
-        host = bundle.request.get_host()
-        for key in bundle.data:
-            if key.endswith('_uri'):
-                # key = key.replace('_uri', '_url')
-                bundle.data[key] = 'http://%s%s' % (host, bundle.data[key])
-        return bundle
-
-    def reverse_dataset_url(self, name, dataset, **kwargs):
-        kwargs.update(api_name=self._meta.api_name)
-        url = reverse(name, kwargs=kwargs)
-        parameters = urllib.urlencode({
-            'dataset__bucket__slug': dataset.bucket.slug,
-            'dataset__slug': dataset.slug,
-            'dataset_version': dataset.version
-        })
-        return u'%s?%s' % (url, parameters)
+##
+# REST Framework
+class APIError(Exception):
+    pass
 
 
-class RootResource(ReadOnlyJSONResource):
-    class Meta:
-        pass
+class API(object):
+    def __init__(self, name):
+        self.name = name
+        self.urls = []
 
-    def get_list(self):
+    def register(self, resource):
+        self.urls += resource.get_urls()
+
+
+class FullReverseMixin(object):
+    def full_reverse(self, name, args=None, kwargs=None, parameters=None):
+        url = reverse(name, args=args, kwargs=kwargs)
+        return self.request.build_absolute_uri(url)
+
+
+class PaginatorMixin(object):
+    def __init__(self, **kwargs):
+        self.limit = kwargs.pop('limit', 20)
+        super(PaginatorMixin, self).__init__(**kwargs)
+
+    def get_int_parameter(self, var, default=None, positive=False):
+        try:
+            value = int(self.request.GET.get(var, default))
+        except ValueError:
+            raise ApiError('%s must be a valid number')
+
+        if positive and value <= 0:
+            raise ApiError('%s must be a number greater than zero')
+
+        return value
+
+    def get_data(self):
+        limit = self.get_int_parameter(
+            'limit', default=self.limit, positive=True)
+        page_number = self.get_int_parameter('page', default=1, positive=True)
+
+        data = super(PaginatorMixin, self).get_data()
+        paginator = Paginator(data, limit)
+        page = paginator.page(page_number)
+        meta = {'limit': limit,
+                'page': page_number,
+                'next': None,
+                'previous': None,
+                'count': data.count()}
+        if page.has_next():
+            meta['next'] = '?page=#TODO'
+        if page.has_previous():
+            meta['previous'] = '?page=#TODO'
+
+        return {'meta': meta, 'data': data}
+
+    def marshal_data(self, data):
+        data['data'] = (super(PaginatorMixin, self)
+                        .marshal_data(data['data']))
+        return data
+
+
+class Resource(FullReverseMixin, View):
+    content_type = 'application/json'
+
+    name = None
+    slug = None
+    data = None
+
+    def __init__(self, name=None, slug=None, data=None):
+        if name is not None:
+            self.name = name
+        if data is not None:
+            self.data = data
+        if not self.slug:
+            self.slug = slug or self.name
+        self.pattern = r'^%s/$' % self.slug
+
+    def get(self, request, **kwargs):
+        try:
+            data = self.get_data()
+            marshaled_data = self.marshal_data(data)
+            serialized_data = self.serialize_data(marshaled_data)
+            status_code = 200
+        except APIError as e:
+            serialized_data = json.dumps({"error": str(e)})
+            status_code = 401
+
+        return HttpResponse(content=serialized_data, status=status_code,
+                            content_type=self.content_type)
+
+    def get_urls(self):
+        return [url(self.pattern, self.__class__.as_view(), name=self.name)]
+
+    def get_data(self):
+        return self.data
+
+    def marshal_data(self, data):
+        return data
+
+    def serialize_data(self, data):
+        return json.dumps(data)
+
+
+class ModelResource(Resource):
+    model = None
+
+    def __init__(self, **kwargs):
+        model = kwargs.pop('model', None)
+        super(ModelResource, self).__init__(**kwargs)
+        if model is not None:
+            self.model = model
+        if not self.name:
+            self.name = self.model._meta.verbose_name
+        self._serializer = PythonSerializer()
+
+    def get_urls(self):
+        slug = self.model._meta.verbose_name
+        pattern = r'^%s/$' % slug
+        name = self.name or self.model.verbose_name
+        view = self.__class__.as_view(
+            model=self.model, name=self.name, slug=self.slug)
+        return [url(pattern, view, name=name)]
+
+    def get_query_set(self):
+        return self.model.objects.all()
+
+    def get_data(self):
+        return self.get_query_set()
+
+    def marshal_object(self, obj):
+        return self._serializer.serialize([obj])[0]
+
+
+class ModelListResource(PaginatorMixin, ModelResource):
+    def get_filters(self):
+        """
+        Returns a filter spec that will be passed to the queryset.
+        """
+        return {}
+
+    def get_queryset(self):
+        filters = self.get_filters()
+        return self.get_query_set().filter(**filters)
+
+    def marshal_data(self, data):
+        return [self.marshal_object(obj) for obj in data]
+
+
+class ModelDetailResource(ModelResource):
+    def get_data(self, request, pk):
+        return self.get_query_set().get(pk=pk)
+
+    def marshal_data(self, data):
+        return self.marshal_object(data)
+
+
+##
+# HSTORE schema resources
+class DatasetRelatedResource(ModelListResource):
+    def get_filters(self):
+        filters = {}
+        if 'dataset' in self.request.GET:
+            filters['dataset__slug'] = self.request.GET['dataset']
+        if 'bucket' in self.request.GET:
+            filters['dataset__bucket__slug'] = self.request.GET['bucket']
+        if 'version' in self.request.GET:
+            filters['dataset__version'] = self.request.GET['version']
+        if 'source' in self.request.GET:
+            filters['dataset__source__slug'] = self.request.GET['source']
+
+        return filters
+
+
+class RootResource(Resource):
+    name = 'root'
+    url_pattern = r'^$'
+
+    def __init__(self, **kwargs):
+        super(RootResource, self).__init__(**kwargs)
+
+    def get_data(self):
         return {
-            'buckets_uri': reverse('bucket_list', request=request),
-            'datasets_uri': reverse('dataset_list', request=request),
-            'fields_uri': reverse('field_list', request=request),
-            'records_uri': reverse('record_list', request=request),
+            'buckets_uri': self.full_reverse('root'),
+            'datasets_uri': self.full_reverse('root'),
+            'fields_uri': self.full_reverse('root'),
+            'records_uri': self.full_reverse('root'),
         }
 
 
-class BucketResource(ReadOnlyJSONResource):
-    class Meta:
-        queryset = Bucket.objects.all()
-        resource_name = 'buckets'
-        filtering = {
-            'slug': ('exact',),
-        }
+class BucketListResource(ModelListResource):
+    model = Bucket
+    name = 'bucket_list'
+    url_pattern = r'^buckets/$'
+
+    def get_filters(self):
+        if 'slug' in self.request.GET:
+            return {'slug': self.request.GET['slug']}
+        else:
+            return {}
 
 
-class DatasetResource(ReadOnlyJSONResource):
-    bucket = fields.ForeignKey(BucketResource, 'bucket')
-
-    class Meta:
-        queryset = Dataset.objects.all()
-        resource_name = 'datasets'
-        filtering = {
-            'slug': ('exact',),
-            'bucket': ALL_WITH_RELATIONS,
-        }
-
-    def dehydrate(self, bundle):
-        bundle.data['records_uri'] = self.reverse_dataset_url(
-            'api_dispatch_list', bundle.obj, resource_name='records')
-        bundle.data['fields_uri'] = self.reverse_dataset_url(
-            'api_dispatch_list', bundle.obj, resource_name='fields')
-
-        return super(DatasetResource, self).dehydrate(bundle)
-
-
-class DatasetRelatedResource(ReadOnlyJSONResource):
-    class Meta:
-        filtering = {
-            'dataset__slug': ('exact',),
-            'dataset__version': ('exact',),
-            'dataset__bucket__slug': ('exact',)
-        }
-
-
-class RecordResource(DatasetRelatedResource):
-    class Meta:
-        queryset = Record.objects.select_related()
-        resource_name = 'records'
-
-    def dehydrate(self, bundle):
-        bundle.data['_key'] = bundle.obj._key
-        bundle.data['_data'] = bundle.obj._data
-        return super(RecordResource, self).dehydrate(bundle)
-
-    def dehydrate_data(self, bundle):
-        return bundle.obj.data
-
-
-class FieldResource(DatasetRelatedResource):
-    dataset_uri = fields.ForeignKey(DatasetResource, 'dataset')
-
-    class Meta:
-        queryset = Field.objects.all()
-        resource_name = 'fields'
-        excludes = ('id',)
-        filtering = {
-            'dataset': ALL_WITH_RELATIONS,
-        }
+class DatasetResource(ModelListResource):
+    def marshal_object(self, obj):
+        data = super(DatasetResource, self).marshal_object(obj)
+        data['records_uri'] = '#TODO'
+        data['fields_uri'] = '#TODO'
+        return data

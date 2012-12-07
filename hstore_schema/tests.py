@@ -1,3 +1,4 @@
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from hstore_schema.models import Bucket, Source, Revision, Dataset
@@ -45,3 +46,6 @@ class TestModels(TestCase):
             slug='test', version='2012', defaults={'name': 'Test'})
         self.assertEqual(Revision.objects.count(), 2)
         self.assertEqual(new_dataset.revision.previous, old_dataset.revision)
+
+    def test_api(self):
+        url = reverse('dataset_list', kwargs={'api_version': 1})
