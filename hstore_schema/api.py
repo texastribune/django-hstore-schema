@@ -2,6 +2,7 @@ import urllib
 
 from django.core.urlresolvers import reverse
 from tastypie import fields
+from tastypie.constants import ALL_WITH_RELATIONS
 from tastypie.resources import Resource, ModelResource
 
 from hstore_schema.models import *
@@ -64,6 +65,9 @@ class BucketResource(ReadOnlyJSONResource):
     class Meta:
         queryset = Bucket.objects.all()
         resource_name = 'buckets'
+        filtering = {
+            'slug': ('exact',),
+        }
 
 
 class DatasetResource(ReadOnlyJSONResource):
@@ -72,6 +76,10 @@ class DatasetResource(ReadOnlyJSONResource):
     class Meta:
         queryset = Dataset.objects.all()
         resource_name = 'datasets'
+        filtering = {
+            'slug': ('exact',),
+            'bucket': ALL_WITH_RELATIONS,
+        }
 
     def dehydrate(self, bundle):
         bundle.data['records_uri'] = self.reverse_dataset_url(
@@ -101,13 +109,17 @@ class RecordResource(DatasetRelatedResource):
         bundle.data['_data'] = bundle.obj._data
         return super(RecordResource, self).dehydrate(bundle)
 
-
     def dehydrate_data(self, bundle):
         return bundle.obj.data
 
 
 class FieldResource(DatasetRelatedResource):
+    dataset_uri = fields.ForeignKey(DatasetResource, 'dataset')
+
     class Meta:
         queryset = Field.objects.all()
         resource_name = 'fields'
         excludes = ('id',)
+        filtering = {
+            'dataset': ALL_WITH_RELATIONS,
+        }
