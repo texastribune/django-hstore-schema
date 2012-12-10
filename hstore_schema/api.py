@@ -65,7 +65,7 @@ class PaginatorMixin(object):
         if page.has_previous():
             meta['previous'] = '?page=#TODO'
 
-        return {'meta': meta, 'data': data}
+        return {'meta': meta, 'data': page.object_list}
 
     def marshal_data(self, data):
         data['data'] = (super(PaginatorMixin, self)
@@ -142,7 +142,10 @@ class ModelResource(Resource):
         return self.get_query_set()
 
     def marshal_object(self, obj):
-        return self._serializer.serialize([obj])[0]
+        return self._serializer.serialize([obj])[0]['fields']
+
+    def marshal_data(self, data):
+        return [self.marshal_object(obj) for obj in data]
 
 
 class ModelListResource(PaginatorMixin, ModelResource):
@@ -154,9 +157,6 @@ class ModelListResource(PaginatorMixin, ModelResource):
 
     def get_queryset(self, **filters):
         return self.get_query_set().filter(**filters)
-
-    def marshal_data(self, data):
-        return [self.marshal_object(obj) for obj in data]
 
 
 class ModelDetailResource(ModelResource):
