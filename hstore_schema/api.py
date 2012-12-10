@@ -79,11 +79,11 @@ class PaginatorMixin(object):
 
         # Build the full next and previous URLs
         if page.has_next():
-            meta['next'] = self.full_reverse(
-                self.name, parameters={'page': page.next_page_number()})
+            meta['next'] = self.full_reverse(self.name, kwargs=self.kwargs,
+                parameters={'page': page.next_page_number()})
         if page.has_previous():
-            meta['previous'] = self.full_reverse(
-                self.name, parameters={'page': page.previous_page_number()})
+            meta['previous'] = self.full_reverse(self.name, kwargs=self.kwargs,
+                parameters={'page': page.previous_page_number()})
 
         return {'meta': meta, 'data': page.object_list}
 
