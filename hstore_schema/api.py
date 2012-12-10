@@ -94,15 +94,17 @@ class Resource(FullReverseMixin, View):
     name = None
     slug = None
     data = None
+    pattern = None
 
-    def __init__(self, name=None, slug=None, data=None):
+    def __init__(self, name=None, slug=None, data=None, pattern=None):
         if name is not None:
             self.name = name
         if data is not None:
             self.data = data
         if not self.slug:
             self.slug = slug or self.name
-        self.pattern = r'^%s/$' % self.slug
+        if not self.pattern:
+            self.pattern = pattern or r'^%s/$' % self.slug
 
     def get(self, request, **kwargs):
         try:
@@ -143,12 +145,10 @@ class ModelResource(Resource):
         self._serializer = PythonSerializer()
 
     def get_urls(self):
-        slug = self.model._meta.verbose_name
-        pattern = r'^%s/$' % slug
         name = self.name or self.model.verbose_name
         view = self.__class__.as_view(
             model=self.model, name=self.name, slug=self.slug)
-        return [url(pattern, view, name=name)]
+        return [url(self.pattern, view, name=name)]
 
     def get_query_set(self):
         return self.model.objects.all()
@@ -202,7 +202,7 @@ class DatasetRelatedResource(ModelListResource):
 
 class RootResource(Resource):
     name = 'root'
-    url_pattern = r'^$'
+    pattern = r'^$'
 
     def __init__(self, **kwargs):
         super(RootResource, self).__init__(**kwargs)
@@ -214,18 +214,6 @@ class RootResource(Resource):
             'fields_uri': self.full_reverse('root'),
             'records_uri': self.full_reverse('root'),
         }
-
-
-class BucketListResource(ModelListResource):
-    model = Bucket
-    name = 'bucket_list'
-    url_pattern = r'^buckets/$'
-
-    def get_filters(self):
-        if 'slug' in self.request.GET:
-            return {'slug': self.request.GET['slug']}
-        else:
-            return {}
 
 
 class DatasetResource(ModelListResource):
