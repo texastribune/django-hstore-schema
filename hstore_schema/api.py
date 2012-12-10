@@ -287,9 +287,21 @@ class RootResource(Resource):
         }
 
 
-class DatasetResource(ModelListResource):
+class DatasetMixin(ModelListResource):
+    model = Dataset
+
     def marshal_object(self, obj):
-        data = super(DatasetResource, self).marshal_object(obj)
-        data['records_uri'] = '#TODO'
-        data['fields_uri'] = '#TODO'
+        data = super(DatasetMixin, self).marshal_object(obj)
+        data['records'] = self.full_reverse(
+            'dataset_records_list', kwargs={'pk': obj.pk})
+        data['fields'] = self.full_reverse(
+            'dataset_fields_list', kwargs={'pk': obj.pk})
         return data
+
+
+class DatasetListResource(DatasetMixin, ModelListResource):
+    pass
+
+
+class DatasetDetailResource(DatasetMixin, ModelDetailResource):
+    pass
