@@ -6,11 +6,21 @@ from hstore_schema.models import *
 
 v1_api = API(name='v1')
 
-v1_api.register(RootResource())
-v1_api.register(ModelListResource(model=Bucket))
-v1_api.register(ModelListResource(model=Dataset))
-v1_api.register(ModelListResource(model=Record))
-v1_api.register(ModelListResource(model=Field))
+root = RootResource()
+bucket_list = ModelListResource(model=Bucket)
+record_list = ModelListResource(model=Record)
+field_list = ModelListResource(model=Field)
+dataset_list = ModelListResource(model=Dataset)
+dataset_detail = ModelDetailResource(model=Dataset)
+
+v1_api.register(root)
+v1_api.register(bucket_list)
+v1_api.register(record_list)
+v1_api.register(field_list)
+v1_api.register(dataset_list)
+v1_api.register(dataset_detail)
+v1_api.register(dataset_detail.records)
+v1_api.register(dataset_detail.fields)
 
 urlpatterns = patterns('',
     url(r'^api/v1/', include(v1_api.urls)),

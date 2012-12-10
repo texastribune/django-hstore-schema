@@ -199,7 +199,7 @@ class ModelListResource(PaginatorMixin, ModelResource):
 
 class ModelDetailResource(ModelResource):
     def __init__(self, **kwargs):
-        super(ModelListResource, self).__init__(**kwargs)
+        super(ModelDetailResource, self).__init__(**kwargs)
         if not self.name:
             self.name = '%s_detail' % self.model._meta.verbose_name
 
