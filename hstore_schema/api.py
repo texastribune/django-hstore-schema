@@ -152,8 +152,7 @@ class ModelListResource(PaginatorMixin, ModelResource):
         """
         return {}
 
-    def get_queryset(self):
-        filters = self.get_filters()
+    def get_queryset(self, **filters):
         return self.get_query_set().filter(**filters)
 
     def marshal_data(self, data):
@@ -162,7 +161,8 @@ class ModelListResource(PaginatorMixin, ModelResource):
 
 class ModelDetailResource(ModelResource):
     def get_data(self, request, pk):
-        return self.get_query_set().get(pk=pk)
+        filters = self.get_filters()
+        return self.get_query_set(**filters).get(pk=pk)
 
     def marshal_data(self, data):
         return self.marshal_object(data)
