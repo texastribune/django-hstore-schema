@@ -84,9 +84,8 @@ class PaginatorMixin(object):
         return {'meta': meta, 'data': page.object_list}
 
     def marshal_data(self, data):
-        data['data'] = (super(PaginatorMixin, self)
-                        .marshal_data(data['data']))
-        return data
+        marshaled_data = super(PaginatorMixin, self).marshal_data(data['data'])
+        return dict(data, data=marshaled_data)
 
 
 class Resource(FullReverseMixin, View):
