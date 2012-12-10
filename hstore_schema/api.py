@@ -26,6 +26,8 @@ class API(object):
         self.urls += resource.get_urls()
 
 
+##
+# Mixins
 class FullReverseMixin(object):
     def full_reverse(self, name, args=None, kwargs=None, parameters=None):
         url = reverse(name, args=args, kwargs=kwargs)
@@ -90,6 +92,17 @@ class PaginatorMixin(object):
         return dict(data, data=marshaled_data)
 
 
+class SlugFilterMixin(object):
+    def get_filters(self):
+        filters = super(SlugFilterMixin, self).get_filters()
+        if 'slug' in self.request.GET:
+            filters['slug'] = self.request.GET['slug']
+
+        return filters
+
+
+##
+# Resources
 class Resource(FullReverseMixin, View):
     content_type = 'application/json'
 
