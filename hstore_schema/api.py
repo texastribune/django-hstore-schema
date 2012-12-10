@@ -136,13 +136,16 @@ class ModelResource(Resource):
     model = None
 
     def __init__(self, **kwargs):
+        self._serializer = PythonSerializer()
+
         model = kwargs.pop('model', None)
-        super(ModelResource, self).__init__(**kwargs)
+        slug = kwargs.pop('slug', None)
         if model is not None:
             self.model = model
-        if not self.name:
-            self.name = self.model._meta.verbose_name
-        self._serializer = PythonSerializer()
+        if slug is None:
+            kwargs['slug'] = slugify(self.model._meta.verbose_name_plural)
+
+        super(ModelResource, self).__init__(**kwargs)
 
     def get_urls(self):
         name = self.name or self.model.verbose_name
