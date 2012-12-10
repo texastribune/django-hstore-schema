@@ -28,6 +28,11 @@ class API(object):
 class FullReverseMixin(object):
     def full_reverse(self, name, args=None, kwargs=None, parameters=None):
         url = reverse(name, args=args, kwargs=kwargs)
+        if name == self.name:
+            get_parameters = dict(self.request.GET.items())
+            parameters = dict(get_parameters, **parameters)
+        if parameters:
+            url = u'%s?%s' % (url, urllib.urlencode(parameters))
         return self.request.build_absolute_uri(url)
 
 
@@ -61,9 +66,11 @@ class PaginatorMixin(object):
                 'previous': None,
                 'count': data.count()}
         if page.has_next():
-            meta['next'] = '?page=#TODO'
+            meta['next'] = self.full_reverse(
+                self.name, parameters={'page': page.next_page_number()})
         if page.has_previous():
-            meta['previous'] = '?page=#TODO'
+            meta['previous'] = self.full_reverse(
+                self.name, parameters={'page': page.previous_page_number()})
 
         return {'meta': meta, 'data': page.object_list}
 
