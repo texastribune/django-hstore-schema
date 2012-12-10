@@ -45,10 +45,10 @@ class PaginatorMixin(object):
         try:
             value = int(self.request.GET.get(var, default))
         except ValueError:
-            raise ApiError('%s must be a valid number')
+            raise APIError('"%s" must be a valid number' % var)
 
         if positive and value <= 0:
-            raise ApiError('%s must be a number greater than zero')
+            raise APIError('"%s" must be a number greater than zero' % var)
 
         return value
 
