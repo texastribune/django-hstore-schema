@@ -167,6 +167,11 @@ class ModelResource(Resource):
 
 
 class ModelListResource(PaginatorMixin, ModelResource):
+    def __init__(self, **kwargs):
+        super(ModelListResource, self).__init__(**kwargs)
+        if not self.name:
+            self.name = '%s_list' % self.model._meta.verbose_name
+
     def get_filters(self):
         """
         Returns a filter spec that will be passed to the queryset.
@@ -178,6 +183,11 @@ class ModelListResource(PaginatorMixin, ModelResource):
 
 
 class ModelDetailResource(ModelResource):
+    def __init__(self, **kwargs):
+        super(ModelListResource, self).__init__(**kwargs)
+        if not self.name:
+            self.name = '%s_detail' % self.model._meta.verbose_name
+
     def get_data(self, request, pk):
         filters = self.get_filters()
         return self.get_query_set(**filters).get(pk=pk)
