@@ -193,8 +193,9 @@ class ModelListResource(PaginatorMixin, ModelResource):
         """
         return {}
 
-    def get_queryset(self, **filters):
-        return self.get_query_set().filter(**filters)
+    def get_query_set(self):
+        filters = self.get_filters()
+        return super(ModelListResource, self).get_query_set().filter(**filters)
 
 
 class ModelDetailResource(ModelResource):
