@@ -203,13 +203,49 @@ class ModelDetailResource(ModelResource):
         super(ModelDetailResource, self).__init__(**kwargs)
         if not self.name:
             self.name = '%s_detail' % self.model._meta.verbose_name
+        self.pattern = '%s/(?P<pk>\d+)/$' % self.pattern.rstrip('/$')
 
-    def get_data(self, request, pk):
-        filters = self.get_filters()
-        return self.get_query_set(**filters).get(pk=pk)
+        self.related_resources = {}
+
+    def get_data(self):
+        return self.get_query_set().get(pk=self.kwargs['pk'])
+
+    def marshal_object(self, obj):
+        data = super(ModelDetailResource, self).marshal_object(obj)
+        for attr, resource in self.related_resources.items():
+            data[attr] = self.full_reverse(self.name, kwargs={'pk': self.pk})
+        return data
 
     def marshal_data(self, data):
         return self.marshal_object(data)
+
+    def __getattr__(self, attr):
+        # If the attr is a related field from this resource's model,
+        # build a related resource with this resource's arguments in the
+        # queryset filter.
+        model_attr = getattr(self.model, attr, None)
+        if model_attr and hasattr(model_attr, 'related'):
+            try:
+                return self.related_resources[attr]
+            except KeyError:
+                pass
+
+            related_model = model_attr.related.model
+            parent_attr = model_attr.related.field.name
+
+            def get_filters(self):
+                filters = super(self.__class__, self).get_filters()
+                filters['%s__pk' % parent_attr] = self.kwargs['pk']
+                return filters
+
+            name = '%s_%s_list' % (parent_attr, attr)
+            pattern = '%s/%s' % (self.pattern.rstrip('/$'), attr)
+            resource = type('ModelListResource_%s' % name,
+                            (ModelListResource,), {'get_filters': get_filters})
+            self.related_resources[attr] = resource
+            return resource(model=related_model, name=name, pattern=pattern)
+
+        return super(ModelDetailResource, self).__getattribute__(attr)
 
 
 ##
