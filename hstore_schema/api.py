@@ -53,21 +53,27 @@ class PaginatorMixin(object):
         return value
 
     def get_data(self):
+        # Try to get the current page number and limit from the request
         limit = self.get_int_parameter(
             'limit', default=self.limit, positive=True)
         page_number = self.get_int_parameter('page', default=1, positive=True)
 
+        # Build the current page and raise a 404 if it does not exist
         data = super(PaginatorMixin, self).get_data()
         paginator = Paginator(data, limit)
         try:
             page = paginator.page(page_number)
         except EmptyPage:
             raise Http404
+
+        # Build meta resource data
         meta = {'limit': limit,
                 'page': page_number,
                 'next': None,
                 'previous': None,
                 'count': data.count()}
+
+        # Build the full next and previous URLs
         if page.has_next():
             meta['next'] = self.full_reverse(
                 self.name, parameters={'page': page.next_page_number()})
