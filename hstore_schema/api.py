@@ -6,6 +6,7 @@ from django.core.paginator import Paginator, EmptyPage
 from django.core.serializers.python import Serializer as PythonSerializer
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, Http404
+from django.template.defaultfilters import slugify
 from django.views.generic import View
 
 from hstore_schema.models import *
@@ -29,6 +30,7 @@ class FullReverseMixin(object):
     def full_reverse(self, name, args=None, kwargs=None, parameters=None):
         url = reverse(name, args=args, kwargs=kwargs)
         if name == self.name:
+            parameters = parameters or {}
             get_parameters = dict(self.request.GET.items())
             parameters = dict(get_parameters, **parameters)
         if parameters:
