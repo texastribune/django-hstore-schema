@@ -41,6 +41,12 @@ class FullReverseMixin(object):
 
 
 class PaginatorMixin(object):
+    """
+    Overrides the `get_data` method to paginate the object list.
+
+    This may not be appropriate as a mixin because it relies on the base
+    class returning a queryset from the `get_data` method.
+    """
     def __init__(self, **kwargs):
         self.limit = kwargs.pop('limit', 20)
         super(PaginatorMixin, self).__init__(**kwargs)
