@@ -222,10 +222,10 @@ class RootResource(Resource):
 
     def get_data(self):
         return {
-            'buckets_uri': self.full_reverse('root'),
-            'datasets_uri': self.full_reverse('root'),
-            'fields_uri': self.full_reverse('root'),
-            'records_uri': self.full_reverse('root'),
+            'buckets': self.full_reverse('bucket_list'),
+            'datasets': self.full_reverse('dataset_list'),
+            'records': self.full_reverse('record_list'),
+            'fields': self.full_reverse('field_list'),
         }
 
 
