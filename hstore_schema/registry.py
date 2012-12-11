@@ -50,7 +50,7 @@ class Library(object):
                 return facet
 
             self._facets[slug] = inner
-            return inner
+            return function
 
         return wrapper
 
@@ -79,7 +79,7 @@ class Library(object):
 
             slug = '%s/%s' % (namespace, inner.func_name)
             self._field_data[slug] = inner
-            return inner
+            return function
 
         return wrapper
 
