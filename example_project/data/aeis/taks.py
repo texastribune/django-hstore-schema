@@ -3,6 +3,8 @@ import re
 from example_project.data import registry
 
 campus_taks = registry.register('campus-taks')
+campus_taks_commended = registry.register('campus-taks-commended')
+campus_taks_met_standard = registry.register('campus-taks-met-standard')
 
 
 @campus_taks.key(namespace='campus', keyspace='cdc')
@@ -18,64 +20,75 @@ def campus_cdc_key(record):
     raise KeyError
 
 
-@campus_taks.facet()
-def facet(record, field, value):
-    facets = {}
-
-    # Facet on grade level
+@campus_taks.facet('grade', required=True)
+def facet_grade(record, field, value):
     match = re.search(r'Grade (\d+)', field)
     if match:
-        facets['grade'] = match.group(1)
+        return match.group(1)
 
-    # Facet on ethnicity
+
+@campus_taks.facet('ethnicity')
+@campus_taks_commended.facet('ethnicity')
+@campus_taks_met_standard.facet('ethnicity')
+def facet_ethnicity(record, field, value):
     if 'Two or More Races' in field:
-        facets['ethnicity'] = 'Two or More Races'
+        return 'Two or More Races'
     elif 'African American' in field:
-        facets['ethnicity'] = 'African American'
+        return 'African American'
     elif 'Hispanic' in field:
-        facets['ethnicity'] = 'Hispanic'
+        return 'Hispanic'
     elif 'Native American' in field:
-        facets['ethnicity'] = 'Native American'
+        return 'Native American'
     elif 'Asian/Pac Islander' in field:
-        facets['ethnicity'] = 'Asian/Pacific Islander'
+        return 'Asian/Pacific Islander'
     elif 'Pacific Islander' in field:
-        facets['ethnicity'] = 'Pacific Islander'
+        return 'Pacific Islander'
     elif 'Asian' in field:
-        facets['ethnicity'] = 'Asian'
+        return 'Asian'
     elif 'White' in field:
-        facets['ethnicity'] = 'White'
+        return 'White'
 
-    # Facet on demographic
+
+@campus_taks.facet('demographic')
+@campus_taks_commended.facet('demographic')
+@campus_taks_met_standard.facet('demographic')
+def facet_demographic(record, field, value):
     if 'LEP' in field:
-        facets['demographic'] = 'Limited English Proficient'
+        return 'Limited English Proficient'
     elif 'Econ Disadv' in field:
-        facets['demographic'] = 'Economically Disavdantaged'
+        return 'Economically Disavdantaged'
 
-    # Facet on subject
+
+@campus_taks.facet('subject')
+@campus_taks_commended.facet('subject')
+@campus_taks_met_standard.facet('subject')
+def facet_subject(record, field, value):
     if 'Mathematics' in field:
-        facets['subject'] = 'Math'
+         return 'Math'
     if 'Science' in field:
-        facets['subject'] = 'Science'
+         return 'Science'
     elif 'Social Studies' in field:
-        facets['subject'] = 'Social Studies'
+         return 'Social Studies'
     elif 'Reading/ELA' in field:
-        facets['subject'] = 'Reading/ELA'
+         return 'Reading/ELA'
     elif 'Writing' in field:
-        facets['subject'] = 'Writing'
+         return 'Writing'
 
-    # Facet on gender
+
+@campus_taks.facet('gender')
+def facet_gender(record, field, value):
     if 'Male' in field:
-        facets['gender'] = 'Male'
+        return 'Male'
     elif 'Female' in field:
-        facets['gender'] = 'Female'
+        return 'Female'
 
-    # Facet on language
+
+@campus_taks.facet('language')
+def facet_language(record, field, value):
     if 'Non-Spanish' in field:
-        facets['language'] = 'Spanish'
+        return 'Spanish'
     elif 'Spanish' in field:
-        facets['language'] = 'Spanish'
-
-    return facets
+        return 'Spanish'
 
 
 # TODO: Map/reduce Asian and Pacific Islander aggregate ethnicities

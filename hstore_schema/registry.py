@@ -21,7 +21,7 @@ class Library(object):
         self.version = version
 
         self._key = None
-        self._facet = None
+        self._facets = {}
         self._field_data = {}
 
     @property
@@ -40,13 +40,16 @@ class Library(object):
 
         return wrapper
 
-    def facet(self):
+    def facet(self, slug, required=False):
         def wrapper(function):
             @wraps(function)
             def inner(record, field, value):
-                return function(record, field, value)
+                facet = function(record, field, value)
+                if required is True and facet is None:
+                    raise ValueError('Facet "%s" is required.' % slug)
+                return facet
 
-            self._facet = inner
+            self._facets[slug] = inner
             return inner
 
         return wrapper
@@ -61,8 +64,11 @@ class Library(object):
                 for field, value in record.data.iteritems():
                     if pattern and not pattern.match(field):
                         continue
-                    if self._facet:
-                        facets = self._facet(record, field, value)
+
+                    if self._facets:
+                        facets = {}
+                        for slug, facet_func in self._facets.items():
+                            facets[slug] = facet_func(record, field, value)
                     else:
                         facets = None
                     yield function(record, field, value, facets=facets)
