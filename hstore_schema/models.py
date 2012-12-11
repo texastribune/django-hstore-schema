@@ -163,9 +163,10 @@ class Record(models.Model):
     def _data(self):
         data = []
         if self._register and self._register._field_data:
-            for label, f in self._register._field_data.iteritems():
+            for field, f in self._register._field_data.iteritems():
                 for d in f(self):
                     if d:
+                        d['field'] = field
                         data.append(d)
 
         return data
