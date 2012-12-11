@@ -8,7 +8,7 @@ v1_api = API(name='v1')
 
 root = RootResource()
 bucket_list = ModelListResource(model=Bucket)
-record_list = ModelListResource(model=Record)
+record_list = RecordListResource()
 field_list = FieldListResource()
 dataset_list = DatasetListResource()
 dataset_detail = DatasetDetailResource()

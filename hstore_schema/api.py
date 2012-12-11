@@ -353,3 +353,18 @@ class FieldMixin(DatasetRelatedMixin):
 
 class FieldListResource(FieldMixin, ModelListResource):
     pass
+
+
+class RecordMixin(DatasetRelatedMixin):
+    model = Record
+
+    def marshal_object(self, obj):
+        data = super(RecordMixin, self).marshal_object(obj)
+        if self.request.GET.get('preview'):
+            data['key'] = obj._key
+            data['data'] = obj._data
+        return data
+
+
+class RecordListResource(RecordMixin, ModelListResource):
+    pass
