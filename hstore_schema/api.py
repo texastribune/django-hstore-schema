@@ -272,6 +272,15 @@ class DatasetRelatedMixin(object):
 
         return filters
 
+    def marshal_object(self, obj):
+        data = super(DatasetRelatedMixin, self).marshal_object(obj)
+        data['dataset'] = {
+            'url': self.full_reverse('dataset_detail',
+                                     kwargs={'pk': obj.dataset.id}),
+            'slug': obj.dataset.slug,
+            'version': obj.dataset.version,
+        }
+        return data
 
 class RootResource(Resource):
     name = 'root'
@@ -324,11 +333,6 @@ class DatasetDetailResource(DatasetMixin, ModelDetailResource):
 class FieldMixin(DatasetRelatedMixin):
     model = Field
 
-    def marshal_object(self, obj):
-        data = super(FieldMixin, self).marshal_object(obj)
-        data['dataset'] = self.full_reverse('dataset_detail',
-                                            kwargs={'pk': obj.dataset.id})
-        return data
 
     def get_query_set(self):
         qs = super(FieldMixin, self).get_query_set()
