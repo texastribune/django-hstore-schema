@@ -71,7 +71,11 @@ class Library(object):
                             facets[slug] = facet_func(record, field, value)
                     else:
                         facets = None
-                    yield function(record, field, value, facets=facets)
+
+                    data = function(record, field, value, facets=facets)
+                    if data:
+                        data['source'] = {'field': field, 'value': value}
+                        yield data
 
             slug = '%s/%s' % (namespace, inner.func_name)
             self._field_data[slug] = inner
