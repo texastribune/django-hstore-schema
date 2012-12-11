@@ -103,6 +103,8 @@ class SlugFilterMixin(object):
         filters = super(SlugFilterMixin, self).get_filters()
         if 'slug' in self.request.GET:
             filters['slug'] = self.request.GET['slug']
+        if 'slug-contains' in self.request.GET:
+            filters['slug__contains'] = self.request.GET['slug-contains']
 
         return filters
 
