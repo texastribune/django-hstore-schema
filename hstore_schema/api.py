@@ -287,7 +287,7 @@ class RootResource(Resource):
         }
 
 
-class DatasetMixin(ModelListResource):
+class DatasetMixin(object):
     model = Dataset
 
     def marshal_object(self, obj):
