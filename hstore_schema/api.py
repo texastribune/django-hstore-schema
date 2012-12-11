@@ -152,7 +152,7 @@ class Resource(FullReverseMixin, View):
         return data
 
     def serialize_data(self, data):
-        return json.dumps(data)
+        return json.dumps(data, indent=2)
 
 
 class ModelResource(Resource):
