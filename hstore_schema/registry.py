@@ -54,9 +54,11 @@ class Library(object):
 
         return wrapper
 
-    def field_data(self, namespace, label=None, pattern=None):
+    def field_data(self, slug, label=None, namespace=None, pattern=None):
         if pattern is not None:
             pattern = re.compile(pattern)
+        if namespace:
+            slug = u'%s/%s' % (namespace, slug)
 
         def wrapper(function):
             @wraps(function)
@@ -77,7 +79,6 @@ class Library(object):
                         data['source'] = {'field': field, 'value': value}
                         yield data
 
-            slug = '%s/%s' % (namespace, inner.func_name)
             self._field_data[slug] = inner
             return function
 
