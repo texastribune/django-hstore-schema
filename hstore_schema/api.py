@@ -305,3 +305,22 @@ class DatasetListResource(DatasetMixin, ModelListResource):
 
 class DatasetDetailResource(DatasetMixin, ModelDetailResource):
     pass
+
+
+
+class FieldMixin(DatasetRelatedMixin):
+    model = Field
+
+    def marshal_object(self, obj):
+        data = super(FieldMixin, self).marshal_object(obj)
+        data['dataset'] = self.full_reverse('dataset_detail',
+                                            kwargs={'pk': obj.dataset.id})
+        return data
+
+    def get_query_set(self):
+        qs = super(FieldMixin, self).get_query_set()
+        return qs
+
+
+class FieldListResource(FieldMixin, ModelListResource):
+    pass
