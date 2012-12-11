@@ -282,6 +282,11 @@ class DatasetRelatedMixin(object):
         }
         return data
 
+    def get_query_set(self):
+        qs = super(DatasetRelatedMixin, self).get_query_set()
+        return qs.select_related('dataset')
+
+
 class RootResource(Resource):
     name = 'root'
     pattern = r'^$'
