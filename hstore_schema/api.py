@@ -342,6 +342,12 @@ class FieldMixin(DatasetRelatedMixin):
 
     def get_query_set(self):
         qs = super(FieldMixin, self).get_query_set()
+        if 'name-like' in self.request.GET:
+            q = self.request.GET['name-like']
+            qs = qs.extra(
+                select={'distance': 'hstore_schema_field.name <-> %s'},
+                select_params=[q]
+            ).order_by('distance')
         return qs
 
 
