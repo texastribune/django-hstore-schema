@@ -361,8 +361,10 @@ class RecordMixin(DatasetRelatedMixin):
     def marshal_object(self, obj):
         data = super(RecordMixin, self).marshal_object(obj)
         if self.request.GET.get('preview'):
-            data['key'] = obj._key
-            data['data'] = obj._data
+            data['preview'] = {
+                'key': obj._key,
+                'data': obj._data,
+            }
         return data
 
 
