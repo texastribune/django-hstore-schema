@@ -256,7 +256,7 @@ class ModelDetailResource(ModelResource):
 
 ##
 # HSTORE schema resources
-class DatasetRelatedResource(ModelListResource):
+class DatasetRelatedMixin(object):
     def get_filters(self):
         filters = {}
         if 'dataset' in self.request.GET:
@@ -287,8 +287,19 @@ class RootResource(Resource):
         }
 
 
-class DatasetMixin(object):
+class DatasetMixin(SlugFilterMixin):
     model = Dataset
+
+    def get_filters(self):
+        filters = super(DatasetMixin, self).get_filters()
+        if 'bucket' in self.request.GET:
+            filters['bucket__slug'] = self.request.GET['bucket']
+        if 'version' in self.request.GET:
+            filters['version'] = self.request.GET['version']
+        if 'source' in self.request.GET:
+            filters['source__slug'] = self.request.GET['source']
+
+        return filters
 
     def marshal_object(self, obj):
         data = super(DatasetMixin, self).marshal_object(obj)
