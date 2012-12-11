@@ -269,6 +269,9 @@ class DatasetRelatedMixin(object):
             filters['dataset__version'] = self.request.GET['version']
         if 'source' in self.request.GET:
             filters['dataset__source__slug'] = self.request.GET['source']
+        if 'dataset-contains' in self.request.GET:
+            filters['dataset__slug__contains'] = \
+                self.request.GET['dataset-contains']
 
         return filters
 
@@ -334,10 +337,8 @@ class DatasetDetailResource(DatasetMixin, ModelDetailResource):
     pass
 
 
-
 class FieldMixin(DatasetRelatedMixin):
     model = Field
-
 
     def get_query_set(self):
         qs = super(FieldMixin, self).get_query_set()
