@@ -27,6 +27,14 @@ def facet_grade(record, field, value):
         return match.group(1)
 
 
+@campus_taks_commended.facet('grades')
+@campus_taks_met_standard.facet('grades')
+def facet_grades(record, field, value):
+    match = re.search(r'Grades (\w+-\w+)', field)
+    if match:
+        return match.group(1)
+
+
 @campus_taks.facet('ethnicity')
 @campus_taks_commended.facet('ethnicity')
 @campus_taks_met_standard.facet('ethnicity')
