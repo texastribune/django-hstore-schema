@@ -70,7 +70,9 @@ class Library(object):
                     if self._facets:
                         facets = {}
                         for slug, facet_func in self._facets.items():
-                            facets[slug] = facet_func(record, field, value)
+                            facet = facet_func(record, field, value)
+                            if facet is not None:
+                                facets[slug] = facet
                     else:
                         facets = None
 
