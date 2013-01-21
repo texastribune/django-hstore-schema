@@ -54,6 +54,10 @@ class Revision(models.Model):
     """
     digest = models.CharField(max_length=32)
     previous = models.OneToOneField('self', null=True, related_name='next')
+    # TODO: Add a timestamp field
+    # This will allow a `by_time` method on the RevisionManager that
+    # returns data current for a specific point in time by querying
+    # (revision__timestamp__lte=<time>, revision__next__timestamp__gt=<time>)
 
     def save(self, *args, **kwargs):
         if not self.digest:
