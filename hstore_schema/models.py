@@ -209,6 +209,7 @@ class Data(models.Model):
     revision = models.ForeignKey(Revision, related_name='dataset')
     version = models.CharField(max_length=255)
 
+    # keyspace = models.ForeignKey(Keyspace)
     key = models.SlugField()
     slug = models.SlugField()
     label = models.CharField(max_length=255)
@@ -218,6 +219,54 @@ class Data(models.Model):
 
     class Meta:
         unique_together = ('revision', 'key', 'slug', 'facets')
+
+
+class Attribute(models.Model):
+    """
+    Sketch of an attribute model based on Datomic.
+    """
+    # keyspace = models.ForeignKey(keyspace)
+    key = models.SlugField()  # /schools/name
+    cardinality = models.SlugField(default="one")  # one or many
+    type = models.CharField(default="one")  # value or reference
+    description = models.TextField()  # Ex: district or campus name
+    revision = models.ForeignKey(Revision)
+
+    """
+    Now a Entity with a specific key can have a set of Values with each
+    Value having a specific Attribute.
+
+    The cardinality of the Attribute informs the transformation of data.
+    For example, if a Campus has a "schools/name" Attribute with
+    cardinality "one" and a "schools/taks" Attribute with cardinality
+    "many", the resulting Datum would take the form:
+
+        {
+            key: "schools/227001002",
+            values: {
+                "schools/name": "Austin High School",
+                "schools/taks": [
+                    ...
+                ]
+            }
+        }
+    """
+
+
+class Facet(models.Model):
+    key = models.SlugField()
+    name = models.CharField(max_length=100)
+    # short_name
+    # label
+    description = models.TextField()
+    # revision?
+
+
+class Value(models.Model):
+    entity = models.ForeignKey(Entity)
+    attribute = models.ForeignKey(attribute)
+    facets = ArrayField()
+    data = JSONField()
 
 
 class Code(models.Model):
