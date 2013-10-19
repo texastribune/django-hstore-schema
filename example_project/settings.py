@@ -23,8 +23,13 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'tastypie',
     'example_project',
     'hstore_schema',
 )
+
+REST_FRAMEWORK = {
+  'PAGINATE_BY': 20,
+}
 
 from local_settings import *
